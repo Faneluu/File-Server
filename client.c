@@ -38,7 +38,9 @@ void client_func(int sockfd)
         memset(buff, '\0', strlen(buff));
 
         // read from server
-        read(sockfd, buff, sizeof(buff));
+        if (read(sockfd, buff, sizeof(buff)) <= 0)
+            break;
+        
         printf("From server: %s", buff);
 
         memset(buff, '\0', strlen(buff));
