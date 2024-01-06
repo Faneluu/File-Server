@@ -3,7 +3,7 @@
 all: server client
 
 server: server.c
-	@gcc server.c -o server
+	@gcc server.c -lpthread -o server
 
 CLient: client.c
 	@gcc  client.c -o client
