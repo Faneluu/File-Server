@@ -1,5 +1,104 @@
 #include "initialization.h"
 
+bool add_file(char *filePath)
+{
+    // save the file
+    memcpy(listFiles[nrFiles], filePath, strlen(filePath));
+    FILE *f = fopen(ALL_FILES, "a");
+
+    if (nrFiles != 0)
+        fprintf(f, "\n");
+
+    fprintf(f, "%s", listFiles[nrFiles]);
+    nrFiles++; 
+    fclose(f);
+    return true;
+}
+
+char *add_root(char *filePath)
+{
+    printf("Enter add_root() with filePath: '%s'\n", filePath);
+    char *root;
+
+    root = calloc((strlen(ROOT) + strlen(filePath) + 2), sizeof(char));
+    memcpy(root, ROOT, strlen(ROOT));
+
+    if (filePath[0] != '/')
+        root[strlen(root)] = '/';
+
+    memcpy(root + strlen(root), filePath, strlen(filePath));
+
+    return root;
+}
+
+bool make_dir(const char *dirName)
+{
+    printf("Enter make_dir(), with dirnName: '%s'\n", dirName);
+
+    DIR *dir = opendir(dirName);
+
+    if (dir == NULL){
+        if (errno == ENOENT){
+            int status = mkdir(dirName, 0777);
+
+            if (status == -1){
+                perror("mkdir");
+                return false;    
+            }
+
+            return true;
+        }
+
+        else {
+            perror("opendir");
+            return false;
+        }
+    }
+
+    closedir(dir);
+    return true;
+}
+
+bool check_dir(char *filePath)
+{
+    printf("Enter check_dir with filePath: '%s'\n", filePath);
+    char *str, *token, *savePtr, *realPath;
+    int i = 1, nrDir = 0;
+
+    // check path
+    if (filePath[0] != '/')
+        return false;
+
+    // see if has dir
+    while (filePath[i] != '\0'){
+        if (filePath[i] == '/'){
+            nrDir++;
+            break;
+        }
+        i++;
+    }
+
+    // don t have dir
+    printf("Do not have dir!\n");
+    if (!nrDir)
+        return true;
+
+    // check dir
+    str = calloc((strlen(filePath) + 1), sizeof(char));
+    memcpy(str, filePath, strlen(filePath));
+    token = strtok_r(str, "/", &savePtr);
+
+    printf("dir to check is: '%s'\n", token);
+
+    realPath = add_root(token);
+
+    make_dir(realPath);
+
+    free(realPath);
+    free(str);
+    return true;
+}
+
 char *set_status(uint32_t status)
 {
     char *msg = calloc(4, sizeof(char));
@@ -11,26 +110,21 @@ char *set_status(uint32_t status)
 
 char *list_operation()
 {
+    printf("Enter list_operation!\n");
     char *msg, *str;
-    uint32_t bytesRead = 0, msgSize = 26;
+    uint32_t msgSize = 20;
 
-    msg = calloc(nrFiles * LENGTH + nrFiles + msgSize, sizeof(char));
-    bytesRead = msgSize;
+    str = calloc(nrFiles * LENGTH + nrFiles + 1, sizeof(char));
+    msg = calloc(sizeof(str) + msgSize, sizeof(char));
 
     for (int i = 0; i < nrFiles; i ++){
-        memcpy(msg + bytesRead, listFiles[i], strlen(listFiles[i]));
-        bytesRead += strlen(listFiles[i]);
-        msg[bytesRead] = '\0';
-        bytesRead++;
+        memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
+        str[strlen(str)] = '\0';
     }
-
-    bytesRead -= msgSize;
-
-    str = calloc(msgSize, sizeof(char));
-    snprintf(str, msgSize, "0; %u;", bytesRead);
-    memcpy(msg, str, strlen(str));
-    msg[strlen(msg)] = '\n';
-
+     
+    snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
+    printf("msg is: %s\n", msg);
+    
     free(str);
     return msg;
 }
@@ -103,58 +197,12 @@ bool check_upload(char *token, char *savePtr, uint32_t *pBytesPath, char **pFile
     return true;
 }
 
-bool check_dir(char *filePath)
-{
-    printf("Enter check_dir with filePath: '%s'\n", filePath);
-    char *str, *token, *savePtr;
-    int i = 1, nrDir = 0;
-
-    // check path
-    if (filePath[0] != '/')
-        return false;
-
-    // see if has dir
-    while (filePath[i] != '\0'){
-        if (filePath[i] == '/'){
-            nrDir++;
-            break;
-        }
-        i++;
-    }
-
-    // don t have dir
-    if (!nrDir)
-        return true;
-
-    // check dir
-    str = calloc((strlen(filePath) + 1), sizeof(char));
-    memcpy(str, filePath, strlen(filePath));
-    token = strtok_r(str, "/", &savePtr);
-
-    DIR *dir = opendir(token);
-
-    if (dir == NULL){
-        if (errno == ENOENT){
-            int status = mkdir(token, 0777);
-
-            if (status == -1)
-                perror("mkdir");
-        }
-
-        else 
-            perror("opendir");
-    }
-
-    closedir(dir);
-    free(str);
-    return true;
-}
-
 char *upload_operation(char *token, char *savePtr)
 {
     printf("Enter upload_operation!\n");
-    char *msg, *filePath, *fileContent;
+    char *msg, *filePath, *fileContent, *realPath;
     uint32_t bytesPath, bytesContent;
+    bool fileExist = false;
 
     if (!check_upload(token, savePtr, &bytesPath, &filePath, &bytesContent, &fileContent)){
         msg = set_status(BAD_ARGUMENTS);
@@ -167,27 +215,34 @@ char *upload_operation(char *token, char *savePtr)
     }
 
     // create file descriptor
-    filePath++;
-    FILE *f = fopen(filePath, "w");
+    realPath = add_root(filePath);
+
+    printf("My breakpoint 1: '%s'!\n", realPath);
+
+    FILE *f = fopen(realPath, "w");
+
+    printf("My breakpoint 2!\n");
 
     // write the content
     fprintf(f, "%s", fileContent);
-    filePath--;
     fclose(f);
 
-    // save the file
-    memcpy(listFiles[nrFiles], filePath, strlen(filePath));
-    f = fopen(ALL_FILES, "a");
+    // check if already exists
+    for (int i = 0; i < nrFiles; i ++){
+        if (strncmp(filePath, listFiles[i], strlen(filePath)) == 0){
+            fileExist = true;
+            break;
+        }
+    }
 
-    if (nrFiles != 0)
-        fprintf(f, "\n");
+    if (!fileExist)
+        add_file(filePath);
 
-    fprintf(f, "%s", listFiles[nrFiles]);
-    nrFiles++;
-    fclose(f);
-
+    // free memory
+    free(realPath);
     free(filePath);
     free(fileContent);
+
     msg = set_status(SUCCESS);
     return msg;
 }

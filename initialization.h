@@ -17,13 +17,9 @@
 #include <sys/stat.h>
 #include <sys/signalfd.h>
 
-#define LENGTH 80
 #define PORT 8080
-#define CLIENTS 2
-#define EVENTS (CLIENTS + 1)
 #define SA struct sockadd
 #define TIMEOUT 5000
-#define MAX_FILES 10
 
 #define SUCCESS 0
 #define FILE_NOT_FOUND 1
@@ -31,7 +27,14 @@
 #define BAD_ARGUMENTS 20
 #define OTHER_ERROR 40
 
+#define MAX_FILES 10
+#define LENGTH 100
+#define FILE_LENGTH 20
+#define CLIENTS 2
+#define EVENTS (CLIENTS + 1)
+
 #define ALL_FILES "all_files.txt"
+#define ROOT "root"
 
 typedef struct{
     int index;
@@ -50,3 +53,5 @@ extern int listener, newSocket, len, epfd, nrThreads, nrFiles;
 extern char listFiles[MAX_FILES][LENGTH];
 
 char *select_command(char *buff);
+
+bool make_dir(const char *dirName);

@@ -77,10 +77,8 @@ void *handle_client(void *param)
             else{
 
                 // quit
-                if (strncmp(buff,"quit\n", strlen(buff)) == 0){
-                    terminate = 1;
+                if (strncmp(buff,"quit\n", strlen(buff)) == 0)
                     break;
-                }
 
                 msg = select_command(buff);
 
@@ -101,7 +99,7 @@ void *handle_client(void *param)
     printf("Thread = %d with fd= %d exit!", clientThreadParam.index, clientThreadParam.connfd);
     printf("\tHave %d threads at end\n", nrThreads);
 
-    epoll_ctl(epfd, EPOLL_CTL_DEL, clientThreadParam.connfd, &ev);
+    //epoll_ctl(epfd, EPOLL_CTL_DEL, clientThreadParam.connfd, &ev);
 
     close(myEpfd);
     close(clientThreadParam.connfd);
@@ -211,6 +209,9 @@ int initialiseServer()
     else
         printf("Server listening..\n");
 
+    // create root folder if doesn t exist
+    make_dir(ROOT);
+
     // initialise listFiles
     FILE *f = fopen(ALL_FILES, "r");
 
@@ -219,14 +220,12 @@ int initialiseServer()
 
     char buff[LENGTH] = {0};
 
-    printf("Prepare to write from '%s'\n", ALL_FILES);
     while (fgets(buff, LENGTH, f) != NULL){
+        buff[strcspn(buff, "\n")] = '\0';
         memcpy(listFiles[nrFiles], buff, strlen(buff));
-        printf("Saved file: '%s'\n", buff);
         nrFiles++;
         memset(buff, '\0', strlen(buff));
     }
-    printf("Exit initialise listFiles\n");
     fclose(f);
     return sockfd;
 }

@@ -13,4 +13,4 @@ server.o: server.c
 	@gcc -c server.c -o server.o
 
 clean: 
-	@rm -f server client *.o
+	@rm -rf server client all_files.txt *.o root
