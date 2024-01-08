@@ -30,7 +30,7 @@ void client_func(int sockfd)
         write(sockfd, buff, sizeof(buff));
 
         // quit
-        if (strncmp(buff, "quit", 4) == 0){
+        if (strncmp(buff, "quit\n", strlen(buff)) == 0){
             printf("Client quit...\n");
             break;
         }
