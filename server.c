@@ -40,7 +40,7 @@ void *handle_end(void *args)
 
 void *handle_client(void *param)
 {
-    char buff[LENGTH] = {0}, *msg;
+    char buff[1024] = {0}, *msg;
     params clientThreadParam = *((params*)param);
     struct epoll_event threadEv, threadRetEv = {0};
     int myEpfd;
@@ -95,7 +95,7 @@ void *handle_client(void *param)
             }
         }
 
-        printf("Terminate is: %d\n", terminate);
+        //printf("Terminate is: %d\n", terminate);
     }
 
     printf("Thread = %d with fd= %d exit!", clientThreadParam.index, clientThreadParam.connfd);
@@ -211,6 +211,23 @@ int initialiseServer()
     else
         printf("Server listening..\n");
 
+    // initialise listFiles
+    FILE *f = fopen(ALL_FILES, "r");
+
+    if (f == NULL)
+        return sockfd;
+
+    char buff[LENGTH] = {0};
+
+    printf("Prepare to write from '%s'\n", ALL_FILES);
+    while (fgets(buff, LENGTH, f) != NULL){
+        memcpy(listFiles[nrFiles], buff, strlen(buff));
+        printf("Saved file: '%s'\n", buff);
+        nrFiles++;
+        memset(buff, '\0', strlen(buff));
+    }
+    printf("Exit initialise listFiles\n");
+    fclose(f);
     return sockfd;
 }
 

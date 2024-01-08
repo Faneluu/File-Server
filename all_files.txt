@@ -1,0 +1,2 @@
+/file1.txt
+/dir1/file1.txt
