@@ -1,30 +1,4 @@
-#include <stdio.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/epoll.h>
-#include <pthread.h>    
-#include <stdbool.h>
-#include <signal.h>
-#include <sys/signalfd.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define LENGTH 80
-#define PORT 8080
-#define CLIENTS 2
-#define EVENTS (CLIENTS + 1)
-#define SA struct sockadd
-#define TIMEOUT 5000
-
-typedef struct{
-    int index;
-    int connfd;
-}params;
+#include "initialization.h"
 
 struct sockaddr_in cli;
 struct epoll_event ev, ret_ev, events[EVENTS];
@@ -34,17 +8,17 @@ params threadParams[CLIENTS];
 pthread_attr_t attr[CLIENTS];
 pthread_t threadID[CLIENTS], listenThread, terminatorThread;
 
-int listener, newSocket, len, epfd, nrThreads = 0;
-char msg[] = "Hello from server\n";
+int listener, newSocket, len, epfd, nrThreads = 0, nrFiles = 0;
+char listFiles[MAX_FILES][LENGTH] = {0};
 
-void handle_signals(int sig){
+void end_signals(int sig){
 
     if (sig == SIGINT){
-        printf("I used SIGINT!\n");
+        printf("GOT SIGINT!\n");
         terminate = 1;
     }
     else if (sig == SIGTERM){
-        printf("I used SIGTERM!\n");
+        printf("GOT SIGTERM!\n");
         terminate = 1;
     }
     else
@@ -57,7 +31,7 @@ void *handle_end(void *args)
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = handle_signals;
+    sa.sa_handler = end_signals;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
@@ -66,7 +40,7 @@ void *handle_end(void *args)
 
 void *handle_client(void *param)
 {
-    char buff[LENGTH] = {0};
+    char buff[LENGTH] = {0}, *msg;
     params clientThreadParam = *((params*)param);
     struct epoll_event threadEv, threadRetEv = {0};
     int myEpfd;
@@ -101,21 +75,33 @@ void *handle_client(void *param)
             }
 
             else{
+
+                // quit
+                if (strncmp(buff,"quit\n", strlen(buff)) == 0){
+                    terminate = 1;
+                    break;
+                }
+
+                msg = select_command(buff);
+
+                // send buffer to client
+                write(clientThreadParam.connfd, msg, strlen(msg));
+
                 // print buffer
                 printf("From client: %s\tTo client: %s", buff, msg);
 
-                // send buffer to client
-                write(clientThreadParam.connfd, msg, sizeof(msg));
                 memset(buff, '\0', strlen(buff));
-        
+                free(msg);
             }
         }
 
-        //printf("Terminate is: %d\n", terminate);
+        printf("Terminate is: %d\n", terminate);
     }
 
     printf("Thread = %d with fd= %d exit!", clientThreadParam.index, clientThreadParam.connfd);
     printf("\tHave %d threads at end\n", nrThreads);
+
+    epoll_ctl(epfd, EPOLL_CTL_DEL, clientThreadParam.connfd, &ev);
 
     close(myEpfd);
     close(clientThreadParam.connfd);
@@ -167,7 +153,7 @@ void *handle_connections(void *args)
             int bytesRead = read(ret_ev.data.fd, buff, sizeof(buff));
             printf("Read from input: %s", buff);
 
-            if (strncmp("quit", buff, 4) == 0){
+            if (strncmp(buff, "quit\n", strlen(buff)) == 0){
                 pthread_kill(listenThread, SIGTERM);
             }
         }
