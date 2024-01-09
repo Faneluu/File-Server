@@ -11,11 +11,14 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <stdatomic.h>
+#include <threads.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/signalfd.h>
+#include <sys/sendfile.h>
 
 #define PORT 8080
 #define SA struct sockadd
@@ -49,9 +52,23 @@ extern params threadParams[CLIENTS];
 extern pthread_attr_t attr[CLIENTS];
 extern pthread_t threadID[CLIENTS], listenThread, terminatorThread;
 
+extern thread_local int in_fd;
+extern thread_local struct stat fileStats;
+extern thread_local bool canDownload;
+
 extern int listener, newSocket, len, epfd, nrThreads, nrFiles;
 extern char listFiles[MAX_FILES][LENGTH];
 
+// in operations
 char *select_command(char *buff);
 
+// in utils
+bool add_file(char *filePath);
+char *add_root(char *filePath);
 bool make_dir(const char *dirName);
+char *set_status(uint32_t status);
+
+bool check_dir(char *filePath);
+bool check_upload(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath, uint32_t *pBytesContent, char **pFileContent);
+bool check_path(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath);
+bool check_length(const char *f1, const char *f2);
