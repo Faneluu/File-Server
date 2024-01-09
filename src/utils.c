@@ -59,6 +59,15 @@ bool make_dir(const char *dirName)
     return true;
 }
 
+char *set_status(uint32_t status)
+{
+    char *msg = calloc(4, sizeof(char));
+
+    snprintf(msg, 4, "%u\n", status);
+
+    return msg;
+}
+
 bool check_dir(char *filePath)
 {
     printf("Enter check_dir with filePath: '%s'\n", filePath);
@@ -97,36 +106,6 @@ bool check_dir(char *filePath)
     free(realPath);
     free(str);
     return true;
-}
-
-char *set_status(uint32_t status)
-{
-    char *msg = calloc(4, sizeof(char));
-
-    snprintf(msg, 4, "%u\n", status);
-
-    return msg;
-}
-
-char *list_operation()
-{
-    printf("Enter list_operation!\n");
-    char *msg, *str;
-    uint32_t msgSize = 20;
-
-    str = calloc(nrFiles * LENGTH + nrFiles + 1, sizeof(char));
-    msg = calloc(sizeof(str) + msgSize, sizeof(char));
-
-    for (int i = 0; i < nrFiles; i ++){
-        memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
-        str[strlen(str)] = '\0';
-    }
-     
-    snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
-    printf("msg is: %s\n", msg);
-    
-    free(str);
-    return msg;
 }
 
 bool check_upload(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath, uint32_t *pBytesContent, char **pFileContent)
@@ -197,109 +176,44 @@ bool check_upload(char *token, char *savePtr, uint32_t *pBytesPath, char **pFile
     return true;
 }
 
-char *upload_operation(char *token, char *savePtr)
+bool check_path(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath)
 {
-    printf("Enter upload_operation!\n");
-    char *msg, *filePath, *fileContent, *realPath;
-    uint32_t bytesPath, bytesContent;
-    bool fileExist = false;
+    char *filePath;
+    uint32_t bytesPath;
 
-    if (!check_upload(token, savePtr, &bytesPath, &filePath, &bytesContent, &fileContent)){
-        msg = set_status(BAD_ARGUMENTS);
-        return msg;
+    // check bytesPath
+    token = strtok_r(NULL, ";\n", &savePtr);
+    if (token == NULL)
+        return false;
+    
+    bytesPath = atoi(token);
+    if (bytesPath == 0)
+        return false;
+
+    // check filePath
+    token = strtok_r(NULL, ";\n", &savePtr);
+    if (token == NULL)
+        return false;
+
+    filePath = calloc((strlen(token) + 1), sizeof(char));
+    memcpy(filePath, token, strlen(token));
+
+    // check nr parameters
+    token = strtok_r(NULL, ";\n", &savePtr);
+    if (token != NULL){
+        free(filePath);
+        return false;
     }
 
-    if (!check_dir(filePath)){
-        msg = set_status(BAD_ARGUMENTS);
-        return msg;
-    }
-
-    // create file descriptor
-    realPath = add_root(filePath);
-
-    printf("My breakpoint 1: '%s'!\n", realPath);
-
-    FILE *f = fopen(realPath, "w");
-
-    printf("My breakpoint 2!\n");
-
-    // write the content
-    fprintf(f, "%s", fileContent);
-    fclose(f);
-
-    // check if already exists
-    for (int i = 0; i < nrFiles; i ++){
-        if (strncmp(filePath, listFiles[i], strlen(filePath)) == 0){
-            fileExist = true;
-            break;
-        }
-    }
-
-    if (!fileExist)
-        add_file(filePath);
-
-    // free memory
-    free(realPath);
-    free(filePath);
-    free(fileContent);
-
-    msg = set_status(SUCCESS);
-    return msg;
+    (*pBytesPath) = bytesPath;
+    (*pFilePath) = filePath;
+    return true;
 }
 
-char *select_command(char *buff)
+bool check_length(const char *f1, const char *f2)
 {
-    printf("Enter select_command with buf: '%s'\n", buff);
-    char *msg, *str, *token, *savePtr;
-    uint32_t operation;
-    bool isEnd = false;
+    if (strncmp(f1, f2, strlen(f1)) == 0 && strncmp(f1, f2 , strlen(f2)) == 0)
+        return true;
 
-    if (strncmp(buff, "\n", strlen(buff)) == 0){
-        isEnd = true;
-        operation = 10;
-    }
-
-    else{
-        str = calloc((strlen(buff) + 1), sizeof(char));
-        memcpy(str, buff, strlen(buff));
-
-        token = strtok_r(str, ";\n", &savePtr);
-        operation = atoi(token);
-        printf("Token is: '%s'\n", token);
-
-        if (operation == 0 && strncmp(token,"0", strlen(token)) != 0)
-            operation = 10;
-    }
-
-    switch (operation)
-    {
-        case 0:
-        {
-            msg = list_operation();
-            break;
-        }
-
-        case 2:
-        {
-            msg = upload_operation(token, savePtr);
-            break;
-        }
-    
-        case 10:
-        {
-            msg = set_status(UNKNOWN_OPERATION);
-            break;
-        }
-
-        default:
-        {
-            msg = set_status(OTHER_ERROR);
-            break;
-        }
-    }
-
-    if (!isEnd)
-        free(str);
-
-    return msg;
+    return false;
 }

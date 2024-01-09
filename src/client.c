@@ -7,8 +7,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
-#define MAX 80
+#define MAX 1024
 #define PORT 8080
 #define SA struct sockadd
 
@@ -16,9 +17,15 @@ void client_func(int sockfd)
 {
     char buff[MAX] = {0};
     int n;
+    bool isDownload = false;
 
     while (1){
-    
+        
+        if (isDownload){
+            printf("\n");
+            isDownload = false;
+        }
+        
         printf("Enter the string: ");
         n = 0;
 
@@ -35,6 +42,9 @@ void client_func(int sockfd)
             break;
         }
 
+        else if (buff[0] == '1')
+            isDownload = true;
+
         memset(buff, '\0', strlen(buff));
 
         // read from server
@@ -43,6 +53,27 @@ void client_func(int sockfd)
         
         printf("From server: %s", buff);
 
+        // if (isDownload){
+
+        //     //operation was succeed
+        //     if (buff[0] == '0'){
+        //         memset(buff, '\0', strlen(buff));
+
+        //         printf("Preapre to read file\n");
+        //         while (read(sockfd, buff, sizeof(buff)) > 0){
+        //             printf("Content: %s", buff);
+
+        //             if (buff[strlen(buff) - 1] == '\n')
+        //                 break;
+
+        //             memset(buff, '\0', strlen(buff));
+        //             printf("Wait to read again\n");
+        //         }
+        //         printf("\n");
+        //     }
+        //     isDownload = false;
+        // }
+        
         memset(buff, '\0', strlen(buff));
     }
 }

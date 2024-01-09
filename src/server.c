@@ -8,6 +8,10 @@ params threadParams[CLIENTS];
 pthread_attr_t attr[CLIENTS];
 pthread_t threadID[CLIENTS], listenThread, terminatorThread;
 
+thread_local int in_fd = 0;
+thread_local struct stat fileStats;
+thread_local bool canDownload = false;
+
 int listener, newSocket, len, epfd, nrThreads = 0, nrFiles = 0;
 char listFiles[MAX_FILES][LENGTH] = {0};
 
@@ -75,11 +79,12 @@ void *handle_client(void *param)
             }
 
             else{
-
+                
                 // quit
-                if (strncmp(buff,"quit\n", strlen(buff)) == 0)
+                if (strncmp(buff, "quit\n", strlen(buff)) == 0)
                     break;
 
+                // select command
                 msg = select_command(buff);
 
                 // send buffer to client
@@ -87,6 +92,20 @@ void *handle_client(void *param)
 
                 // print buffer
                 printf("From client: %s\tTo client: %s", buff, msg);
+
+                // download
+                if (canDownload){
+                    printf("Downloaded from server\n");
+
+                    ssize_t results = sendfile(clientThreadParam.connfd, in_fd, NULL, fileStats.st_size);
+
+                    if (results < 0){
+                        perror("sendifile");
+                    }
+
+                    close(in_fd);
+                    canDownload = false;
+                }
 
                 memset(buff, '\0', strlen(buff));
                 free(msg);

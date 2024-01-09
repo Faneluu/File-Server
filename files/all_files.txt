@@ -1,0 +1,4 @@
+/dri1/test.txt
+/file1.txt
+/atm/pso.txt
+/atm/retele.txt
