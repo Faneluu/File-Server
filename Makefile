@@ -1,16 +1,20 @@
+CC=@gcc
+BIN_DIR=bin
+SRC_DIR=src
+
 .PHONY: all clean
 
 all: final
 
-final: server.o operations.o client.c
-	@gcc server.o operations.o -lpthread -o server
-	@gcc client.c -o client
+final: $(BIN_DIR)/server.o $(BIN_DIR)/operations.o $(SRC_DIR)/client.c
+	$(CC) $(BIN_DIR)/server.o $(BIN_DIR)/operations.o -lpthread -o $(BIN_DIR)/server
+	$(CC) $(SRC_DIR)/client.c -o $(BIN_DIR)/client
 
-operations.o: operations.c
-	@gcc -c operations.c -o operations.o
+$(BIN_DIR)/operations.o: $(SRC_DIR)/operations.c
+	$(CC) -c $(SRC_DIR)/operations.c -o $(BIN_DIR)/operations.o
 
-server.o: server.c
-	@gcc -c server.c -o server.o
+$(BIN_DIR)/server.o: $(SRC_DIR)/server.c
+	$(CC) -c $(SRC_DIR)/server.c -o $(BIN_DIR)/server.o
 
 clean: 
-	@rm -rf server client all_files.txt *.o root
+	@rm -rf root/* $(BIN_DIR)/* files/*

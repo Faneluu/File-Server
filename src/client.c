@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define MAX 80
+#define MAX 1024
 #define PORT 8080
 #define SA struct sockadd
 

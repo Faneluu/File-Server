@@ -114,14 +114,15 @@ char *list_operation()
     char *msg, *str;
     uint32_t msgSize = 20;
 
-    str = calloc(nrFiles * LENGTH + nrFiles + 1, sizeof(char));
-    msg = calloc(sizeof(str) + msgSize, sizeof(char));
+    str = calloc(nrFiles * PATH_LENGTH + nrFiles + 1, sizeof(char));
+    msg = calloc(nrFiles * PATH_LENGTH + nrFiles + 1 + msgSize, sizeof(char));
 
     for (int i = 0; i < nrFiles; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
         str[strlen(str)] = '\0';
     }
      
+    printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
     printf("msg is: %s\n", msg);
     
@@ -247,6 +248,18 @@ char *upload_operation(char *token, char *savePtr)
     return msg;
 }
 
+char *download_operation(char *token, char *savePtr)
+{
+    char *msg, *filePath, *realPath;
+    uint32_t bytesPath;
+
+    // check bytesPath
+    token = strtok_r(NULL, ";\n", &savePtr);
+    if (token == NULL){
+        
+    }
+}
+
 char *select_command(char *buff)
 {
     printf("Enter select_command with buf: '%s'\n", buff);
@@ -282,6 +295,11 @@ char *select_command(char *buff)
         case 2:
         {
             msg = upload_operation(token, savePtr);
+            break;
+        }
+
+        case 4:
+        {
             break;
         }
     

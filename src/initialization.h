@@ -29,11 +29,11 @@
 
 #define MAX_FILES 10
 #define LENGTH 100
-#define FILE_LENGTH 20
+#define PATH_LENGTH 20
 #define CLIENTS 2
 #define EVENTS (CLIENTS + 1)
 
-#define ALL_FILES "all_files.txt"
+#define ALL_FILES "files/all_files.txt"
 #define ROOT "root"
 
 typedef struct{
