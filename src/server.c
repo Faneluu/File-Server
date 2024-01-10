@@ -1,4 +1,4 @@
-#include "initialization.h"
+#include "../includes/initialization.h"
 
 struct sockaddr_in cli;
 struct epoll_event ev, ret_ev, events[EVENTS];
@@ -44,7 +44,7 @@ void *handle_end(void *args)
 
 void *handle_client(void *param)
 {
-    char buff[1024] = {0}, *msg;
+    char buff[BUFFER_SIZE] = {0}, *msg;
     params clientThreadParam = *((params*)param);
     struct epoll_event threadEv, threadRetEv = {0};
     int myEpfd;

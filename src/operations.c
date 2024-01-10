@@ -1,4 +1,4 @@
-#include "initialization.h"
+#include "../includes/initialization.h"
 
 char *list_operation()
 {
@@ -27,22 +27,15 @@ char *download_operation(char *token, char *savePtr)
     printf("Enter download_operation()!\n");
     char *msg, *filePath, *realPath;
     uint32_t bytesPath;
-    bool fileExist = false;
 
-    if (!check_path(token, savePtr, &bytesPath, &filePath)){
+    // check parameters
+    if (!check_two_parameters(token, savePtr, &bytesPath, &filePath)){
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
 
-    // find the file wished to download
-    for (int i = 0; i < nrFiles; i++){
-        if (check_length(listFiles[i], filePath)){
-            fileExist = true;
-            break;
-        }
-    }
-
-    if (fileExist){
+    // find file
+    if (find_file(filePath)){
         realPath = add_root(filePath);
         printf("Realpath is: '%s'\n", realPath);
 
@@ -71,9 +64,8 @@ char *upload_operation(char *token, char *savePtr)
     printf("Enter upload_operation!\n");
     char *msg, *filePath, *fileContent, *realPath;
     uint32_t bytesPath, bytesContent;
-    bool fileExist = false;
 
-    if (!check_upload(token, savePtr, &bytesPath, &filePath, &bytesContent, &fileContent)){
+    if (!check_four_parameters(token, savePtr, &bytesPath, &filePath, &bytesContent, &fileContent)){
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
@@ -86,47 +78,39 @@ char *upload_operation(char *token, char *savePtr)
     // create file descriptor
     realPath = add_root(filePath);
 
-    printf("My breakpoint 1: '%s'!\n", realPath);
-
     FILE *f = fopen(realPath, "w");
-
-    printf("My breakpoint 2!\n");
 
     // write the content
     fprintf(f, "%s", fileContent);
     fclose(f);
 
-    // check if already exists
-    for (int i = 0; i < nrFiles; i ++){
-        if (strncmp(filePath, listFiles[i], strlen(filePath)) == 0){
-            fileExist = true;
-            break;
-        }
-    }
-
-    if (!fileExist)
+    // add if doesn t exist
+    if (!find_file(filePath))
         add_file(filePath);
 
     // free memory
     free(realPath);
     free(filePath);
     free(fileContent);
-
+     
     msg = set_status(SUCCESS);
+    printf("Exit upload_operation() with msg: '%s'!\n", msg);
     return msg;
 }
 
 char *delete_operation(char *token, char *savePtr)
 {
+    printf("Enter delete_operation()!\n");
     char *msg, *filePath, *realPath;
-    uint32_t bytesPath;
+    uint32_t bytesPath, allFiles;
     bool changeFiles = false;
 
-    if (!check_path(token, savePtr, &bytesPath, &filePath)){
+    if (!check_two_parameters(token, savePtr, &bytesPath, &filePath)){
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
 
+    printf("Check file\n");
     // see if file exists and remove it
     for (int i = 0; i < nrFiles; i ++){
         if (check_length(listFiles[i], filePath)){
@@ -136,22 +120,21 @@ char *delete_operation(char *token, char *savePtr)
         }
     }   
 
+    printf("Update file\n");
     // update the file
     if (changeFiles){
         realPath = add_root(filePath);
         remove(realPath);
 
         FILE *f = fopen(ALL_FILES, "w");
-
-        for (int i = 0; i < nrFiles; i ++){
-            if (listFiles[i][0] != '\0'){
-                fprintf(f, "%s", listFiles[i]);
-
-                if (i != (nrFiles - 1) && listFiles[nrFiles -1][0] != '\0')
-                    fprintf(f, "\n");
-            }
-        }
         fclose(f);
+
+        allFiles = nrFiles;
+        nrFiles = 0;
+
+        for (int i = 0; i < allFiles; i ++)
+            add_file(listFiles[i]);
+
         free(realPath);
         msg = set_status(SUCCESS);
     }
@@ -159,6 +142,40 @@ char *delete_operation(char *token, char *savePtr)
         msg = set_status(FILE_NOT_FOUND);
 
     free(filePath);
+    return msg;
+}
+
+char *move_operation(char *token, char *savePtr)
+{
+    printf("Enter move_operation()!\n");
+    char *msg, *inFilePath, *outFilePath;
+    uint32_t bytesInFile, bytesOutFile;
+
+    if (!check_four_parameters(token, savePtr, &bytesInFile, &inFilePath, &bytesOutFile, &outFilePath)){
+        msg = set_status(BAD_ARGUMENTS);
+        return msg;
+    }
+
+    if (!find_file(inFilePath)){
+        msg = set_status(FILE_NOT_FOUND);
+        free(inFilePath);
+        free(outFilePath);
+        return msg;
+    }
+
+    // upload second file path
+    if (!send_upload_operation(bytesOutFile,inFilePath, outFilePath)){
+        free(inFilePath);
+        free(outFilePath);
+        msg = set_status(BAD_ARGUMENTS);
+        return msg;
+    }
+
+    // delete first file path
+    msg = send_delete_operation(bytesInFile, inFilePath);
+   
+    free(inFilePath);
+    free(outFilePath);
     return msg;
 }
 
@@ -209,6 +226,11 @@ char *select_command(char *buff)
         case 4:
         {
             msg = delete_operation(token, savePtr);
+            break;
+        }
+
+        case 8:
+        {   msg = move_operation(token, savePtr);
             break;
         }
     

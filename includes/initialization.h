@@ -30,6 +30,7 @@
 #define BAD_ARGUMENTS 20
 #define OTHER_ERROR 40
 
+#define BUFFER_SIZE 1024
 #define MAX_FILES 10
 #define LENGTH 100
 #define PATH_LENGTH 20
@@ -61,6 +62,9 @@ extern char listFiles[MAX_FILES][LENGTH];
 
 // in operations
 char *select_command(char *buff);
+char *upload_operation(char *token, char *savePtr);
+char *delete_operation(char *token, char *savePtr);
+char *list_operation();
 
 // in utils
 bool add_file(char *filePath);
@@ -69,6 +73,10 @@ bool make_dir(const char *dirName);
 char *set_status(uint32_t status);
 
 bool check_dir(char *filePath);
-bool check_upload(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath, uint32_t *pBytesContent, char **pFileContent);
-bool check_path(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath);
+bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath, uint32_t *pBytesContent, char **pFileContent);
+bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath);
 bool check_length(const char *f1, const char *f2);
+bool find_file(const char *filePath);
+
+bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFilePath);
+char *send_delete_operation(uint32_t bytesInFile, char *inFilePath);
