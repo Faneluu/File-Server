@@ -1,2 +1,2 @@
 /newAtm/newPso.txt
-/newAtm/newRetele.txt
+/atm/cripto.txt

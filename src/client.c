@@ -42,7 +42,7 @@ void client_func(int sockfd)
             break;
         }
 
-        else if (buff[0] == '1')
+        else if (buff[0] == '1' && buff[1] != '0')
             isDownload = true;
 
         memset(buff, '\0', strlen(buff));

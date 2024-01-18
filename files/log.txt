@@ -1,0 +1,10 @@
+19-01-2024, 00:37:35, LIST
+19-01-2024, 00:38:05, DOWNLOAD
+19-01-2024, 00:39:45, UPLOAD, /home/diary.txt
+19-01-2024, 00:40:23, DOWNLOAD
+19-01-2024, 00:41:15, DELETE, /home/diary.txt
+19-01-2024, 00:42:27, UPLOAD, /atm/cripto.txt
+19-01-2024, 00:42:27, DELETE, /dir/krypton
+19-01-2024, 00:42:27, MOVE, /dir/krypton, /atm/cripto.txt
+19-01-2024, 00:43:08, UPDATE, /cripto.txt
+19-01-2024, 00:43:38, UPDATE, /atm/cripto.txt

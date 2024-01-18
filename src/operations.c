@@ -14,10 +14,14 @@ char *list_operation()
         str[strlen(str)] = '\0';
     }
      
-    printf("str is: %s\n", str);
+    //printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
-    printf("msg is: %s\n", msg);
+    //printf("msg is: %s\n", msg);
     
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "LIST");
+    write_log();
+
     free(str);
     return msg;
 }
@@ -55,6 +59,10 @@ char *download_operation(char *token, char *savePtr)
     else
         msg = set_status(FILE_NOT_FOUND);
 
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "DOWNLOAD");
+    write_log();
+
     free(filePath);
     return msg;
 }
@@ -87,6 +95,10 @@ char *upload_operation(char *token, char *savePtr)
     // add if doesn t exist
     if (!find_file(filePath))
         add_file(filePath);
+
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "UPLOAD, %s", filePath);
+    write_log();
 
     // free memory
     free(realPath);
@@ -141,6 +153,10 @@ char *delete_operation(char *token, char *savePtr)
     else 
         msg = set_status(FILE_NOT_FOUND);
 
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "DELETE, %s", filePath);
+    write_log();
+
     free(filePath);
     return msg;
 }
@@ -173,9 +189,48 @@ char *move_operation(char *token, char *savePtr)
 
     // delete first file path
     msg = send_delete_operation(bytesInFile, inFilePath);
+
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "MOVE, %s, %s", inFilePath, outFilePath);
+    write_log();
    
     free(inFilePath);
     free(outFilePath);
+    return msg;
+}
+
+char *update_operation(char *token, char *savePtr)
+{
+    printf("Enter update_operation()!\n");
+    char *msg, *filePath, *newContent, *realPath;
+    uint32_t bytesPath, offset, bytesContent;
+
+    if (!check_five_parameters(token, savePtr, &bytesPath, &offset, &bytesContent, &filePath, &newContent)){
+        msg = set_status(BAD_ARGUMENTS);
+        return msg;
+    }
+
+    if (find_file(filePath)){
+        realPath = add_root(filePath);
+
+        FILE *f = fopen(realPath, "r+");
+
+        fseek(f, offset, SEEK_SET);
+        fprintf(f, "%s", newContent);
+        
+
+        fclose(f);
+        free(realPath);
+        msg = set_status(SUCCESS);
+    }
+    else 
+        msg = set_status(FILE_NOT_FOUND);
+
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "UPDATE, %s", filePath);
+    write_log();
+
+    printf("Exit update_operation() with msg: '%s'!\n", msg);
     return msg;
 }
 
@@ -188,7 +243,7 @@ char *select_command(char *buff)
 
     if (strncmp(buff, "\n", strlen(buff)) == 0){
         isEnd = true;
-        operation = 10;
+        operation = 99;
     }
 
     else{
@@ -200,7 +255,7 @@ char *select_command(char *buff)
         printf("Token is: '%s'\n", token);
 
         if (operation == 0 && strncmp(token,"0", strlen(token)) != 0)
-            operation = 10;
+            operation = 99;
     }
 
     switch (operation)
@@ -233,8 +288,14 @@ char *select_command(char *buff)
         {   msg = move_operation(token, savePtr);
             break;
         }
-    
+
         case 10:
+        {
+            msg = update_operation(token, savePtr);
+            break;
+        }
+
+        case 99:
         {
             msg = set_status(UNKNOWN_OPERATION);
             break;

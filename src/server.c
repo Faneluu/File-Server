@@ -8,9 +8,10 @@ params threadParams[CLIENTS];
 pthread_attr_t attr[CLIENTS];
 pthread_t threadID[CLIENTS], listenThread, terminatorThread;
 
-thread_local int in_fd = 0;
+thread_local int in_fd;
 thread_local struct stat fileStats;
 thread_local bool canDownload = false;
+thread_local char sendToLog[LENGTH] = {0};
 
 int listener, newSocket, len, epfd, nrThreads = 0, nrFiles = 0;
 char listFiles[MAX_FILES][LENGTH] = {0};
@@ -75,6 +76,7 @@ void *handle_client(void *param)
 
                 else{
                     perror("read");
+                    break;
                 }
             }
 

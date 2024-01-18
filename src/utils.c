@@ -110,6 +110,87 @@ bool check_dir(char *filePath)
     return true;
 }
 
+bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uint32_t *pOffset, uint32_t *pByteContent, char **pFilePath, char **pNewContent)
+{
+    char *filePath, *newContent;
+    uint32_t bytesPath, offset, bytesContent;
+
+    // check paramters and start with bytesPath
+    printf("Token is: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
+    printf("Token is at bytesPath: '%s'\n", token);
+    if (token == NULL)
+        return false;
+    
+    bytesPath = atoi(token);
+    if (bytesPath == 0)
+        return false;
+
+    // check filePath
+    token = strtok_r(NULL, ";\n", &savePtr);
+    printf("Token is at filePath: '%s'\n", token);
+    if (token == NULL)
+        return false;
+    
+    filePath = calloc((strlen(token) + 1), sizeof(char));
+    memcpy(filePath, token, strlen(token));
+
+    // check offset
+    token = strtok_r(NULL, ";\n", &savePtr);
+    printf("Token is at offset: '%s'\n", token);
+    if (token == NULL){
+        free(filePath);
+        return false;
+    }
+    
+    offset = atoi(token);
+    if (offset == 0){
+        free(filePath);
+        return false;
+    }
+
+    // check bytesContent
+    token = strtok_r(NULL, ";\n", &savePtr);
+    printf("Token is at bytesContent: '%s'\n", token);
+    if (token == NULL){
+        free(filePath);
+        return false;
+    }
+    
+    bytesContent = atoi(token);
+    if (bytesContent == 0){
+        free(filePath);
+        return false;
+    }
+
+    // check newContent
+    token = strtok_r(NULL, ";\n", &savePtr);
+    printf("Token is at newContent: '%s'\n", token);
+    if (token == NULL){
+        free(filePath);
+        return false;
+    }
+
+    newContent = calloc((strlen(token) + 1), sizeof(char));
+    memcpy(newContent, token, strlen(token));
+
+    // check if has more parameters than required
+    token = strtok_r(NULL, ";\n", &savePtr);
+    if (token != NULL){
+        free(filePath);
+        free(newContent);
+        return false;
+    }
+
+    (*pBytesPath) = bytesPath;
+    (*pOffset) = offset;
+    (*pByteContent) = bytesContent;
+    (*pFilePath) = filePath;
+    (*pNewContent) = newContent;
+
+    return true;
+}
+
 bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char **pStr1, uint32_t *pBytes2, char **pStr2)
 {
     printf("Enter check_four_parameters()!\n");
@@ -227,7 +308,7 @@ bool check_length(const char *f1, const char *f2)
 
 bool find_file(const char *filePath)
 {
-    // find the file wished to download
+    // find the file
     for (int i = 0; i < nrFiles; i++){
         if (check_length(listFiles[i], filePath)){
             return true;
@@ -297,4 +378,24 @@ char *send_delete_operation(uint32_t bytesInFile, char *inFilePath)
 
     free(str);
     return msg;
+}
+
+bool write_log()
+{
+    time_t currentTime = time(NULL);
+    struct tm *localTime = localtime(&currentTime);
+    char *timeStr;
+
+    timeStr = calloc((LENGTH + strlen(sendToLog)), sizeof(char));
+    strftime(timeStr, LENGTH, "%d-%m-%Y, %H:%M:%S, ", localTime);
+
+    memcpy(timeStr + strlen(timeStr), sendToLog, strlen(sendToLog));
+
+    FILE *f = fopen(LOG_FILE, "a");
+    fprintf(f, "%s\n", timeStr);
+    fclose(f);
+
+    free(timeStr);
+
+    return true;
 }

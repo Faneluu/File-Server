@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/epoll.h>
 #include <pthread.h>    
 #include <stdbool.h>
 #include <signal.h>
@@ -13,7 +12,9 @@
 #include <dirent.h>
 #include <stdatomic.h>
 #include <threads.h>
+#include <time.h>
 
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,6 +40,7 @@
 
 #define ALL_FILES "files/all_files.txt"
 #define ROOT "root"
+#define LOG_FILE "files/log.txt"
 
 typedef struct{
     int index;
@@ -56,6 +58,7 @@ extern pthread_t threadID[CLIENTS], listenThread, terminatorThread;
 extern thread_local int in_fd;
 extern thread_local struct stat fileStats;
 extern thread_local bool canDownload;
+extern thread_local char sendToLog[LENGTH];
 
 extern int listener, newSocket, len, epfd, nrThreads, nrFiles;
 extern char listFiles[MAX_FILES][LENGTH];
@@ -64,7 +67,6 @@ extern char listFiles[MAX_FILES][LENGTH];
 char *select_command(char *buff);
 char *upload_operation(char *token, char *savePtr);
 char *delete_operation(char *token, char *savePtr);
-char *list_operation();
 
 // in utils
 bool add_file(char *filePath);
@@ -73,6 +75,7 @@ bool make_dir(const char *dirName);
 char *set_status(uint32_t status);
 
 bool check_dir(char *filePath);
+bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uint32_t *pOffset, uint32_t *pByteContent, char **pFilePath, char **pNewContent);
 bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath, uint32_t *pBytesContent, char **pFileContent);
 bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath);
 bool check_length(const char *f1, const char *f2);
@@ -80,3 +83,4 @@ bool find_file(const char *filePath);
 
 bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFilePath);
 char *send_delete_operation(uint32_t bytesInFile, char *inFilePath);
+bool write_log();
