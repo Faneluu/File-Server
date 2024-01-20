@@ -323,6 +323,9 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
     int fd;
     struct stat inFileStats;
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     // send upload command for the second path
     str = calloc(BUFFER_SIZE, sizeof(char));
     inRealPath = add_root(inFilePath);
@@ -345,6 +348,9 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
 
     fclose(f);
     free(inRealPath);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
 
     printf("Prepare to enter upload_operation() with str: '%s'!\n", str);
     newToken = strtok_r(str, ";\n", &newSavePtr);
@@ -382,20 +388,58 @@ char *send_delete_operation(uint32_t bytesInFile, char *inFilePath)
 
 bool write_log()
 {
+    pthread_mutex_lock(&logMtx);
+
     time_t currentTime = time(NULL);
-    struct tm *localTime = localtime(&currentTime);
+    struct tm localTime;
     char *timeStr;
 
-    timeStr = calloc((LENGTH + strlen(sendToLog)), sizeof(char));
-    strftime(timeStr, LENGTH, "%d-%m-%Y, %H:%M:%S, ", localTime);
+    localtime_r(&currentTime, &localTime);
 
+    timeStr = calloc((LENGTH + strlen(sendToLog)), sizeof(char));
+    strftime(timeStr, LENGTH, "%d-%m-%Y, %H:%M:%S, ", &localTime);
+    
     memcpy(timeStr + strlen(timeStr), sendToLog, strlen(sendToLog));
 
     FILE *f = fopen(LOG_FILE, "a");
     fprintf(f, "%s\n", timeStr);
     fclose(f);
 
+    printf("Enter write_log() timeStr: '%s'\n", timeStr);
     free(timeStr);
+
+    pthread_mutex_unlock(&logMtx);
 
     return true;
 }
+
+char *show_instructions()
+{
+    char *msg, *buff;
+    struct stat instructionsStats;
+    uint32_t buffSize = 2 * LENGTH;
+
+    stat(INSTRUCTIONS_FILE, &instructionsStats);
+
+    printf("%s size: %d\n", INSTRUCTIONS_FILE, instructionsStats.st_size);
+
+    msg = calloc(instructionsStats.st_size + 1, sizeof(char));
+    buff = calloc(buffSize, sizeof(char));
+
+    pthread_mutex_lock(&mtx);
+
+    FILE * f = fopen(INSTRUCTIONS_FILE, "r");
+
+    while (fgets(buff, buffSize, f) != NULL){
+        memcpy(msg + strlen(msg), buff, strlen(buff));
+        memset(buff, '\0', strlen(buff));
+    }
+
+    fclose(f);
+
+    pthread_mutex_unlock(&mtx);
+
+    free(buff);
+    return msg;
+}
+

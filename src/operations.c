@@ -9,11 +9,17 @@ char *list_operation()
     str = calloc(nrFiles * PATH_LENGTH + nrFiles + 1, sizeof(char));
     msg = calloc(nrFiles * PATH_LENGTH + nrFiles + 1 + msgSize, sizeof(char));
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     for (int i = 0; i < nrFiles; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
         str[strlen(str)] = '\0';
     }
-     
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
+
     //printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
     //printf("msg is: %s\n", msg);
@@ -38,6 +44,9 @@ char *download_operation(char *token, char *savePtr)
         return msg;
     }
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     // find file
     if (find_file(filePath)){
         realPath = add_root(filePath);
@@ -54,10 +63,13 @@ char *download_operation(char *token, char *savePtr)
         free(realPath);
         
         msg = calloc(10, sizeof(char));
-        snprintf(msg, sizeof(msg), "%d; %d; ", SUCCESS, fileStats.st_size);
+        snprintf(msg, 10, "%d; %d; ", SUCCESS, fileStats.st_size);
     }
     else
         msg = set_status(FILE_NOT_FOUND);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "DOWNLOAD");
@@ -86,11 +98,17 @@ char *upload_operation(char *token, char *savePtr)
     // create file descriptor
     realPath = add_root(filePath);
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     FILE *f = fopen(realPath, "w");
 
     // write the content
     fprintf(f, "%s", fileContent);
     fclose(f);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
 
     // add if doesn t exist
     if (!find_file(filePath))
@@ -132,6 +150,9 @@ char *delete_operation(char *token, char *savePtr)
         }
     }   
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     printf("Update file\n");
     // update the file
     if (changeFiles){
@@ -152,6 +173,9 @@ char *delete_operation(char *token, char *savePtr)
     }
     else 
         msg = set_status(FILE_NOT_FOUND);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "DELETE, %s", filePath);
@@ -180,7 +204,7 @@ char *move_operation(char *token, char *savePtr)
     }
 
     // upload second file path
-    if (!send_upload_operation(bytesOutFile,inFilePath, outFilePath)){
+    if (!send_upload_operation(bytesOutFile, inFilePath, outFilePath)){
         free(inFilePath);
         free(outFilePath);
         msg = set_status(BAD_ARGUMENTS);
@@ -210,6 +234,9 @@ char *update_operation(char *token, char *savePtr)
         return msg;
     }
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     if (find_file(filePath)){
         realPath = add_root(filePath);
 
@@ -221,10 +248,13 @@ char *update_operation(char *token, char *savePtr)
 
         fclose(f);
         free(realPath);
-        msg = set_status(SUCCESS);
+        msg = set_status(SUCCESS); 
     }
     else 
         msg = set_status(FILE_NOT_FOUND);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "UPDATE, %s", filePath);

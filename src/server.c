@@ -4,9 +4,9 @@ struct sockaddr_in cli;
 struct epoll_event ev, ret_ev, events[EVENTS];
 
 volatile __sig_atomic_t terminate = 0;
-params threadParams[CLIENTS];
-pthread_attr_t attr[CLIENTS];
-pthread_t threadID[CLIENTS], listenThread, terminatorThread;
+pthread_t listenThread, terminatorThread, indexingThread;
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER, logMtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 thread_local int in_fd;
 thread_local struct stat fileStats;
@@ -43,10 +43,10 @@ void *handle_end(void *args)
     printf("Finish handle_end\n");
 }
 
-void *handle_client(void *param)
+void *handle_client(void *args)
 {
     char buff[BUFFER_SIZE] = {0}, *msg;
-    params clientThreadParam = *((params*)param);
+    params clientThreadParam = *((params*)args);
     struct epoll_event threadEv, threadRetEv = {0};
     int myEpfd;
 
@@ -72,7 +72,7 @@ void *handle_client(void *param)
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
                     //printf("No data available right now!\n");
                     continue;
-                }   
+                }                           
 
                 else{
                     perror("read");
@@ -86,8 +86,12 @@ void *handle_client(void *param)
                 if (strncmp(buff, "quit\n", strlen(buff)) == 0)
                     break;
 
-                // select command
-                msg = select_command(buff);
+                
+                if (strncmp(buff, "help\n", strlen(buff)) == 0)
+                    msg = show_instructions();
+
+                else 
+                    msg = select_command(buff);
 
                 // send buffer to client
                 write(clientThreadParam.connfd, msg, strlen(msg));
@@ -122,14 +126,31 @@ void *handle_client(void *param)
 
     //epoll_ctl(epfd, EPOLL_CTL_DEL, clientThreadParam.connfd, &ev);
 
+    pthread_mutex_lock(&mtx);
+    nrThreads--;
+    pthread_mutex_unlock(&mtx);
+
     close(myEpfd);
     close(clientThreadParam.connfd);
     pthread_exit(NULL);
 }
 
+void *handle_indexing(void *args)
+{
+    printf("Create thread for handling indexing!\n");
+
+
+
+    printf("Exit indexingThread\n");
+}
+
 void *handle_connections(void *args)
 {
     printf("Thread for connections created!\n");
+    pthread_attr_t threadAttr;
+
+    pthread_attr_init(&threadAttr);
+    pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_DETACHED);
 
     while (!terminate){
 
@@ -146,6 +167,7 @@ void *handle_connections(void *args)
         }
 
         else if (ret_ev.data.fd == listener && (ret_ev.events & EPOLLIN) != 0){
+
             // accept the data packet from client and verify
             newSocket = accept(listener, (SA*)&cli, &len);
             if (newSocket < 0){
@@ -159,10 +181,14 @@ void *handle_connections(void *args)
                 ret_ev.events = EPOLLIN;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, newSocket, &ret_ev);
 
-                threadParams[nrThreads].connfd = newSocket;
-                threadParams[nrThreads].index = nrThreads;
+                params threadParameters;
+                pthread_t threadClient;
+                
+                threadParameters.connfd = newSocket;
+                threadParameters.index  = nrThreads;
 
-                pthread_create(&threadID[nrThreads], NULL, handle_client, &threadParams[nrThreads]);
+                pthread_create(&threadClient, &threadAttr, handle_client, &threadParameters);
+                
                 nrThreads++;
             }
         }
@@ -178,15 +204,10 @@ void *handle_connections(void *args)
         }
 
         else {
-            //printf("None of this!\n");
         }
     }
 
-    for (int i = 0; i < nrThreads; i ++){
-        printf("Prepare to join: %d\n", i);
-        pthread_join(threadID[i], NULL);
-        printf("Joinned: %d\n", i);
-    }
+    pthread_attr_destroy(&threadAttr);
 }
 
 int initialiseServer()
@@ -223,7 +244,7 @@ int initialiseServer()
         printf("Socket successfully binded..\n");
 
     // now server is ready to listen and verify
-    if ((listen(sockfd, CLIENTS)) != 0){
+    if ((listen(sockfd, 10 * CLIENTS)) != 0){
         printf("Listen failed...\n");
         exit(EXIT_FAILURE);
     }
@@ -268,6 +289,7 @@ int main()
 
     pthread_create(&listenThread, NULL, handle_connections, NULL);
     pthread_create(&terminatorThread, NULL, handle_end, NULL);
+    pthread_create(&indexingThread, NULL, handle_indexing, NULL);
 
     printf("Prepare to join listenThread\n");
     pthread_join(listenThread, NULL);
@@ -275,10 +297,15 @@ int main()
     printf("Prepare to join terminatorThread\n");
     pthread_join(terminatorThread, NULL);
 
+    printf("Prepare to join indexingThread\n");
+    pthread_join(indexingThread, NULL); 
+
     close(listener);
 
     printf("Joinned listenThread\n");
     printf("Joinned terminatorThread\n");
+    printf("Joinned indexingThread\n");
+
     printf("Exiting...\n");
 
     return EXIT_SUCCESS;
