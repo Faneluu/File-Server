@@ -1,0 +1,21 @@
+
+1. LIST - 0
+    IN: cod_operație;
+
+2. DOWNLOAD - 1
+    IN: cod_operație; nr. octeți cale fișier; calea fișierului
+
+3. UPLOAD - 2
+    IN: cod_operație; nr. octeți cale fișier; calea fișierului; nr. octeți conținut; conținut fișiere
+
+4. DELETE - 4
+    IN: cod_operație; nr. octeți cale fișier; calea fișierului
+
+5. MOVE - 8
+    IN: cod_operație; nr_octeți_cale_fișier_sursă; cale_fișier_sursă_\0; nr_octeți_cale_fișier_destinație; cale_fișier_desitnație_\0
+
+6. UPDATE - 10
+    IN: cod_operație; nr. octeți cale fișier; calea fișierului; octet start; dimensiune; caracterele noi
+
+7. SEARCH -  20
+    IN: cod_operație; nr. octeți cuvânt; cuvânt
