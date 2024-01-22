@@ -4,27 +4,32 @@ struct sockaddr_in cli;
 struct epoll_event ev, ret_ev, events[EVENTS];
 
 volatile __sig_atomic_t terminate = 0;
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER, logMtx = PTHREAD_MUTEX_INITIALIZER, indexMtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t indexCond = PTHREAD_COND_INITIALIZER;
 pthread_t listenThread, terminatorThread, indexingThread;
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER, logMtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 thread_local int in_fd;
 thread_local struct stat fileStats;
 thread_local bool canDownload = false;
 thread_local char sendToLog[LENGTH] = {0};
 
-int listener, newSocket, len, epfd, nrThreads = 0, nrFiles = 0;
+int listener, newSocket, len, epfd, nrThreads = 0, nrFiles = 0, nrSearchFiles = 0;
 char listFiles[MAX_FILES][LENGTH] = {0};
+bool canIndex = false;
+
+files searchFiles[MAX_FILES] = {0};
 
 void end_signals(int sig){
 
     if (sig == SIGINT){
         printf("GOT SIGINT!\n");
         terminate = 1;
+        pthread_cond_signal(&indexCond);
     }
     else if (sig == SIGTERM){
         printf("GOT SIGTERM!\n");
         terminate = 1;
+        pthread_cond_signal(&indexCond);
     }
     else
         printf("Signal unknown...\n");
@@ -139,7 +144,21 @@ void *handle_indexing(void *args)
 {
     printf("Create thread for handling indexing!\n");
 
+    indexFiles();
 
+    while (!terminate){
+        pthread_mutex_lock(&indexMtx);
+
+        while (!canIndex && !terminate)
+            pthread_cond_wait(&indexCond, &indexingThread);
+
+        printf("Work with indexing\n");
+
+        indexFiles();
+
+        canIndex = false;
+        pthread_mutex_unlock(&indexMtx);
+    }
 
     printf("Exit indexingThread\n");
 }

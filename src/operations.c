@@ -14,15 +14,15 @@ char *list_operation()
 
     for (int i = 0; i < nrFiles; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
-        str[strlen(str)] = '\0';
+        str[strlen(str)] = '\n';
     }
-
-    // unlock mutex
-    pthread_mutex_unlock(&mtx);
 
     //printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
     //printf("msg is: %s\n", msg);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
     
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "LIST");
@@ -85,21 +85,23 @@ char *upload_operation(char *token, char *savePtr)
     char *msg, *filePath, *fileContent, *realPath;
     uint32_t bytesPath, bytesContent;
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     if (!check_four_parameters(token, savePtr, &bytesPath, &filePath, &bytesContent, &fileContent)){
         msg = set_status(BAD_ARGUMENTS);
+        pthread_mutex_unlock(&mtx);
         return msg;
     }
 
     if (!check_dir(filePath)){
         msg = set_status(BAD_ARGUMENTS);
+        pthread_mutex_unlock(&mtx);
         return msg;
     }
 
     // create file descriptor
     realPath = add_root(filePath);
-
-    // lock mutex
-    pthread_mutex_lock(&mtx);
 
     FILE *f = fopen(realPath, "w");
 
@@ -107,12 +109,16 @@ char *upload_operation(char *token, char *savePtr)
     fprintf(f, "%s", fileContent);
     fclose(f);
 
-    // unlock mutex
-    pthread_mutex_unlock(&mtx);
-
     // add if doesn t exist
     if (!find_file(filePath))
         add_file(filePath);
+
+    canIndex = true;
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
+    
+    pthread_cond_signal(&indexCond);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "UPLOAD, %s", filePath);
@@ -135,7 +141,11 @@ char *delete_operation(char *token, char *savePtr)
     uint32_t bytesPath, allFiles;
     bool changeFiles = false;
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     if (!check_two_parameters(token, savePtr, &bytesPath, &filePath)){
+        pthread_mutex_unlock(&mtx);
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
@@ -149,10 +159,7 @@ char *delete_operation(char *token, char *savePtr)
             break;
         }
     }   
-
-    // lock mutex
-    pthread_mutex_lock(&mtx);
-
+    
     printf("Update file\n");
     // update the file
     if (changeFiles){
@@ -174,8 +181,12 @@ char *delete_operation(char *token, char *savePtr)
     else 
         msg = set_status(FILE_NOT_FOUND);
 
+    canIndex = true;
+
     // unlock mutex
     pthread_mutex_unlock(&mtx);
+
+    pthread_cond_signal(&indexCond);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "DELETE, %s", filePath);
@@ -229,13 +240,14 @@ char *update_operation(char *token, char *savePtr)
     char *msg, *filePath, *newContent, *realPath;
     uint32_t bytesPath, offset, bytesContent;
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     if (!check_five_parameters(token, savePtr, &bytesPath, &offset, &bytesContent, &filePath, &newContent)){
+        pthread_mutex_unlock(&mtx);
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
-
-    // lock mutex
-    pthread_mutex_lock(&mtx);
 
     if (find_file(filePath)){
         realPath = add_root(filePath);
@@ -253,14 +265,62 @@ char *update_operation(char *token, char *savePtr)
     else 
         msg = set_status(FILE_NOT_FOUND);
 
+    canIndex = true;
+
     // unlock mutex
     pthread_mutex_unlock(&mtx);
+
+    pthread_cond_signal(&indexCond);
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "UPDATE, %s", filePath);
     write_log();
 
     printf("Exit update_operation() with msg: '%s'!\n", msg);
+    return msg;
+}
+
+char *search_operation(char *token, char *savePtr)
+{
+    printf("Enter search_operation!\n");
+    char *msg, *str, *word;
+    uint32_t msgSize = 20, bytesWord;
+
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
+    if (!check_two_parameters(token, savePtr, &bytesWord, &word)){
+        pthread_mutex_unlock(&mtx);
+        msg = set_status(BAD_ARGUMENTS);
+        return msg;
+    }
+
+    str = calloc(nrSearchFiles * LENGTH  + 1, sizeof(char));
+    msg = calloc(nrSearchFiles * LENGTH + nrFiles + 1 + msgSize, sizeof(char));
+
+    for (int i = 0; i < nrSearchFiles; i ++){
+        for (int j = 0; j < FIRST_WORDS; j ++){
+            if (check_length(word, searchFiles[i].freqWords[j].word)){
+                //printf("Find '%s' in '%s' with path '%s'\n", word, searchFiles[i].freqWords[j].word, searchFiles[i].filename);
+                memcpy(str + strlen(str), searchFiles[i].filename, strlen(searchFiles[i].filename));
+                str[strlen(str)] = '\n';
+            }
+        }
+    }
+
+    //printf("str is: %s\n", str);
+    snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
+    //printf("msg is: %s\n", msg);
+
+    // unlock mutex
+    pthread_mutex_unlock(&mtx);
+    
+    memset(sendToLog, '\0', strlen(sendToLog));
+    snprintf(sendToLog, LENGTH, "SEARCH, %s", word);
+    write_log();
+
+    free(word);
+    free(str);
     return msg;
 }
 
@@ -322,6 +382,12 @@ char *select_command(char *buff)
         case 10:
         {
             msg = update_operation(token, savePtr);
+            break;
+        }
+
+        case 20:
+        {
+            msg = search_operation(token, savePtr);
             break;
         }
 

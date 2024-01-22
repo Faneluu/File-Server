@@ -37,6 +37,7 @@
 #define PATH_LENGTH 20
 #define CLIENTS 1
 #define EVENTS (CLIENTS + 1)
+#define FIRST_WORDS 10
 
 #define ALL_FILES "files/all_files.txt"
 #define ROOT "root"
@@ -48,21 +49,33 @@ typedef struct{
     int connfd;
 }params;
 
+typedef struct{
+    char word[LENGTH];
+    int count;
+}wordsFile;
+
+typedef struct{
+    wordsFile freqWords[FIRST_WORDS];
+    char filename[LENGTH];
+}files;
+
 extern struct sockaddr_in cli;
 extern struct epoll_event ev, ret_ev, events[EVENTS];
 
 extern volatile __sig_atomic_t terminate;
 extern pthread_t listenThread, terminatorThread, indexingThread;
-extern pthread_mutex_t mtx, logMtx;
-extern pthread_cond_t cond;
+extern pthread_mutex_t mtx, logMtx, indexMtx;
+extern pthread_cond_t indexCond;
 
 extern thread_local int in_fd;
 extern thread_local struct stat fileStats;
 extern thread_local bool canDownload;
 extern thread_local char sendToLog[LENGTH];
 
-extern int listener, newSocket, len, epfd, nrThreads, nrFiles;
+extern int listener, newSocket, len, epfd, nrThreads, nrFiles, nrSearchFiles;
 extern char listFiles[MAX_FILES][LENGTH];
+extern bool canIndex;
+extern files searchFiles[MAX_FILES];
 
 // in operations
 char *select_command(char *buff);
@@ -86,3 +99,7 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
 char *send_delete_operation(uint32_t bytesInFile, char *inFilePath);
 bool write_log();
 char *show_instructions();
+
+void indexFiles();
+files getSearchFile(char *file);
+int first_appearance(wordsFile **words, int size, char *wordName);

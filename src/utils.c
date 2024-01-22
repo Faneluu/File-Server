@@ -6,7 +6,7 @@ bool add_file(char *filePath)
     memcpy(listFiles[nrFiles], filePath, strlen(filePath));
     FILE *f = fopen(ALL_FILES, "a");
 
-    if (listFiles[nrFiles -1][0] != '\0')
+    if (listFiles[nrFiles - 1][0] != '\0')
         fprintf(f, "\n");
 
     fprintf(f, "%s", listFiles[nrFiles]);
@@ -443,3 +443,117 @@ char *show_instructions()
     return msg;
 }
 
+int first_appearance(wordsFile **words, int size, char *wordName)
+{
+    //printf("\nInside first_appearance()\n");
+    for (int i = 0; i < size; i ++){
+        //printf("Compare: '%s' with '%s'\n", (*words[i]).word, wordName);
+        if (check_length((*words)[i].word, wordName)){
+            //printf("Words match, '%s' and '%s' has %d!\n", (*words)[i].word, wordName, (*words)[i].count);
+            //(*words)[i].count++;
+            //printf("Now has: %d\n", (*words)[i].count);
+            //printf("Word= '%s' has %d appearance\n", (*words[i]).word, (*words[i]).count);
+            return i;
+        }
+    }
+
+    //printf("Exit first_appearance()!\n");
+    return -1;
+}
+
+int compareWords(const void *a, const void *b)
+{
+    wordsFile wordA = *(wordsFile *)a;
+    wordsFile wordB = *(wordsFile *)b;
+
+    return wordB.count - wordA.count;
+}
+
+files getSearchFile(char *file)
+{
+    //printf("Enter getSearchFile()!\n");
+    files searchFile = {0};
+    wordsFile *words;
+    int nrWords = 0, index;
+    char *buff, *str, *token, *savePtr, *filePath;
+    
+    buff = calloc(BUFFER_SIZE + 1, sizeof(char));
+    str = calloc(BUFFER_SIZE + 1, sizeof(char));
+    words = calloc(LENGTH, sizeof(wordsFile));
+
+    filePath = add_root(file);
+    FILE *f = fopen(filePath, "r");
+
+    while (fgets(buff, BUFFER_SIZE, f) != NULL){
+        memcpy(str, buff, strlen(buff));
+
+        token = strtok_r(str, " ,?!.\n", &savePtr);
+        while (token != NULL){
+            index = first_appearance(&words, nrWords, token);
+
+            if (index == -1){
+                memcpy(words[nrWords].word, token, strlen(token));
+                words[nrWords].count++;
+                nrWords++;
+            }
+            else
+                words[index].count++;
+
+            token = strtok_r(NULL, " ,?!.\n", &savePtr);
+        }
+        memset(str, '\0', strlen(str));
+    }
+
+    // printf("Before sort!\n");
+    // for (int i = 0; i < nrWords; i ++){
+    //     printf("Word= '%s' has %d appearance\n", words[i].word, words[i].count);
+    // }
+
+    qsort(words, nrWords, sizeof(wordsFile), compareWords);
+
+    // printf("Words are sort!\n");
+    // for (int i = 0; i < nrWords; i ++){
+    //     printf("Word= '%s' has %d appearance\n", words[i].word, words[i].count);
+    // }
+
+    for (int i = 0; i < FIRST_WORDS; i ++){
+        memcpy(searchFile.freqWords[i].word, words[i].word, strlen(words[i].word));
+        searchFile.freqWords[i].count = words[i].count;
+    }
+
+    fclose(f);
+    free(buff);
+    free(words);
+    free(str);
+    free(filePath);
+
+    //printf("Exit getSearchFile()\n");
+    return searchFile;
+}
+
+void indexFiles()
+{
+    printf("Enter indexFiles!\n");
+    nrSearchFiles = 0;
+
+    for (int i = 0; i < nrFiles; i ++){
+
+        if (listFiles[i][0] != '\0'){
+            memset(searchFiles[nrSearchFiles].filename, '\0', strlen(searchFiles[nrSearchFiles].filename));
+            searchFiles[nrSearchFiles] = getSearchFile(listFiles[i]);
+            memcpy(searchFiles[nrSearchFiles].filename, listFiles[i], strlen(listFiles[i]));
+            nrSearchFiles++;
+        }
+    }
+
+    for (int i = 0; i < nrSearchFiles; i ++){
+        printf("File '%s' has: \n", listFiles[i]);
+
+        for (int j = 0; j < FIRST_WORDS; j ++){
+            printf("Word= '%s' has %d appearance\n", searchFiles[i].freqWords[j].word, searchFiles[i].freqWords[j].count);
+        }
+        printf("\n");
+    }
+
+    printf("Exit indexFiles()!\n");
+}
