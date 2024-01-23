@@ -14,9 +14,10 @@ char *list_operation()
 
     for (int i = 0; i < nrFiles; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
-        str[strlen(str)] = '\n';
+        str[strlen(str)] = ' ';
     }
 
+    
     //printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
     //printf("msg is: %s\n", msg);
@@ -38,14 +39,15 @@ char *download_operation(char *token, char *savePtr)
     char *msg, *filePath, *realPath;
     uint32_t bytesPath;
 
+    // lock mutex
+    pthread_mutex_lock(&mtx);
+
     // check parameters
     if (!check_two_parameters(token, savePtr, &bytesPath, &filePath)){
+        pthread_mutex_unlock(&mtx);
         msg = set_status(BAD_ARGUMENTS);
         return msg;
     }
-
-    // lock mutex
-    pthread_mutex_lock(&mtx);
 
     // find file
     if (find_file(filePath)){
@@ -303,7 +305,7 @@ char *search_operation(char *token, char *savePtr)
             if (check_length(word, searchFiles[i].freqWords[j].word)){
                 //printf("Find '%s' in '%s' with path '%s'\n", word, searchFiles[i].freqWords[j].word, searchFiles[i].filename);
                 memcpy(str + strlen(str), searchFiles[i].filename, strlen(searchFiles[i].filename));
-                str[strlen(str)] = '\n';
+                str[strlen(str)] = ' ';
             }
         }
     }
@@ -340,7 +342,7 @@ char *select_command(char *buff)
         str = calloc((strlen(buff) + 1), sizeof(char));
         memcpy(str, buff, strlen(buff));
 
-        token = strtok_r(str, ";\n", &savePtr);
+        token = strtok_r(str, " ;\n", &savePtr);
         operation = atoi(token);
         printf("Token is: '%s'\n", token);
 

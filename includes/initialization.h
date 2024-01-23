@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -13,6 +12,9 @@
 #include <stdatomic.h>
 #include <threads.h>
 #include <time.h>
+
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -35,7 +37,7 @@
 #define MAX_FILES 10
 #define LENGTH 100
 #define PATH_LENGTH 20
-#define CLIENTS 1
+#define CLIENTS 3
 #define EVENTS (CLIENTS + 1)
 #define FIRST_WORDS 10
 

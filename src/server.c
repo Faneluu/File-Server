@@ -37,7 +37,7 @@ void end_signals(int sig){
 
 void *handle_end(void *args)
 {
-    printf("Inside handle_end!\n");
+    //printf("Inside handle_end!\n");
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
@@ -45,7 +45,7 @@ void *handle_end(void *args)
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    printf("Finish handle_end\n");
+    //printf("Finish handle_end\n");
 }
 
 void *handle_client(void *args)
@@ -55,7 +55,7 @@ void *handle_client(void *args)
     struct epoll_event threadEv, threadRetEv = {0};
     int myEpfd;
 
-    printf("Hello from thread= %d with fd= %d\n", clientThreadParam.index, clientThreadParam.connfd);
+    //printf("Hello from thread= %d with fd= %d\n", clientThreadParam.index, clientThreadParam.connfd);
     printf("Have %d threads at start\n", nrThreads);
 
     myEpfd = epoll_create(1);
@@ -80,7 +80,7 @@ void *handle_client(void *args)
                 }                           
 
                 else{
-                    perror("read");
+                    //perror("read");
                     break;
                 }
             }
@@ -98,24 +98,39 @@ void *handle_client(void *args)
                 else 
                     msg = select_command(buff);
 
-                // send buffer to client
-                write(clientThreadParam.connfd, msg, strlen(msg));
-
                 // print buffer
-                printf("From client: %s\tTo client: %s", buff, msg);
+                //printf("From client: %s\tTo client: %s", buff, msg);
 
                 // download
                 if (canDownload){
-                    printf("Downloaded from server\n");
+                    //printf("\nDownloaded from server with clientfd= %d and filefd= %d with size= %d\n", clientThreadParam.connfd, in_fd, fileStats.st_size);
 
-                    ssize_t results = sendfile(clientThreadParam.connfd, in_fd, NULL, fileStats.st_size);
+                    off_t offset = 0;
+                    int cork = 1;
+
+                    setsockopt(clientThreadParam.connfd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
+
+                    // send buffer to client
+                    write(clientThreadParam.connfd, msg, strlen(msg));
+
+                    ssize_t results = sendfile(clientThreadParam.connfd, in_fd, &offset, fileStats.st_size);
+
+                    //printf("Bytes sent to client= %d\n", results);
 
                     if (results < 0){
-                        perror("sendifile");
+                        perror("sendfile");
                     }
 
                     close(in_fd);
                     canDownload = false;
+
+                    cork = 0;
+                    setsockopt(clientThreadParam.connfd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
+                }
+
+                else {
+                    // send buffer to client
+                    write(clientThreadParam.connfd, msg, strlen(msg));
                 }
 
                 memset(buff, '\0', strlen(buff));
@@ -126,14 +141,16 @@ void *handle_client(void *args)
         //printf("Terminate is: %d\n", terminate);
     }
 
-    printf("Thread = %d with fd= %d exit!", clientThreadParam.index, clientThreadParam.connfd);
-    printf("\tHave %d threads at end\n", nrThreads);
+    //printf("Thread = %d with fd= %d exit!", clientThreadParam.index, clientThreadParam.connfd);
+    
 
     //epoll_ctl(epfd, EPOLL_CTL_DEL, clientThreadParam.connfd, &ev);
 
     pthread_mutex_lock(&mtx);
     nrThreads--;
     pthread_mutex_unlock(&mtx);
+
+    printf("\tHave %d threads\n", nrThreads);
 
     close(myEpfd);
     close(clientThreadParam.connfd);
@@ -142,7 +159,7 @@ void *handle_client(void *args)
 
 void *handle_indexing(void *args)
 {
-    printf("Create thread for handling indexing!\n");
+    //printf("Create thread for handling indexing!\n");
 
     indexFiles();
 
@@ -152,7 +169,7 @@ void *handle_indexing(void *args)
         while (!canIndex && !terminate)
             pthread_cond_wait(&indexCond, &indexingThread);
 
-        printf("Work with indexing\n");
+        //printf("Work with indexing\n");
 
         indexFiles();
 
@@ -160,12 +177,13 @@ void *handle_indexing(void *args)
         pthread_mutex_unlock(&indexMtx);
     }
 
-    printf("Exit indexingThread\n");
+    //printf("Exit indexingThread\n");
 }
 
 void *handle_connections(void *args)
 {
-    printf("Thread for connections created!\n");
+    //printf("Thread for connections created!\n");
+    bool printMaxClientsReached = false;
     pthread_attr_t threadAttr;
 
     pthread_attr_init(&threadAttr);
@@ -180,9 +198,10 @@ void *handle_connections(void *args)
             break;
         }
 
-        if (nrThreads == CLIENTS && ret_ev.data.fd == listener  && (ret_ev.events & EPOLLIN) != 0){
+        if (nrThreads == CLIENTS && ret_ev.data.fd == listener  && (ret_ev.events & EPOLLIN) != 0 && !printMaxClientsReached){
             printf("Max clients reached!\n");
             close(ret_ev.data.fd);
+            printMaxClientsReached = true;
         }
 
         else if (ret_ev.data.fd == listener && (ret_ev.events & EPOLLIN) != 0){
@@ -310,20 +329,20 @@ int main()
     pthread_create(&terminatorThread, NULL, handle_end, NULL);
     pthread_create(&indexingThread, NULL, handle_indexing, NULL);
 
-    printf("Prepare to join listenThread\n");
+    //printf("Prepare to join listenThread\n");
     pthread_join(listenThread, NULL);
 
-    printf("Prepare to join terminatorThread\n");
+    //printf("Prepare to join terminatorThread\n");
     pthread_join(terminatorThread, NULL);
 
-    printf("Prepare to join indexingThread\n");
+    //printf("Prepare to join indexingThread\n");
     pthread_join(indexingThread, NULL); 
 
     close(listener);
 
-    printf("Joinned listenThread\n");
-    printf("Joinned terminatorThread\n");
-    printf("Joinned indexingThread\n");
+    //printf("Joinned listenThread\n");
+    //printf("Joinned terminatorThread\n");
+    //printf("Joinned indexingThread\n");
 
     printf("Exiting...\n");
 
