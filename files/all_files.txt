@@ -1,8 +1,4 @@
-
-/file.txt
-/file2.txt
-/dir/test.txt
-/atm/pso.txt
-/test.txt
-
-/romania/mesaj.txt
+/filozofie/kant
+/filozofie/voltaire
+/istorie/napoleon
+/SF/starwars

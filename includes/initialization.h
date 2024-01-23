@@ -37,7 +37,7 @@
 #define MAX_FILES 10
 #define LENGTH 100
 #define PATH_LENGTH 20
-#define CLIENTS 3
+#define CLIENTS 2
 #define EVENTS (CLIENTS + 1)
 #define FIRST_WORDS 10
 
@@ -67,16 +67,16 @@ extern struct epoll_event ev, ret_ev, events[EVENTS];
 extern volatile __sig_atomic_t terminate;
 extern pthread_t listenThread, terminatorThread, indexingThread;
 extern pthread_mutex_t mtx, logMtx, indexMtx;
-extern pthread_cond_t indexCond;
+extern pthread_cond_t indexCond, listenCond;
 
 extern thread_local int in_fd;
 extern thread_local struct stat fileStats;
 extern thread_local bool canDownload;
 extern thread_local char sendToLog[LENGTH];
 
-extern int listener, newSocket, len, epfd, nrThreads, nrFiles, nrSearchFiles;
+extern int listener, len, epfd, nrThreads, nrFiles, nrSearchFiles;
 extern char listFiles[MAX_FILES][LENGTH];
-extern bool canIndex;
+extern bool canIndex, printMaxClientsReached;
 extern files searchFiles[MAX_FILES];
 
 // in operations

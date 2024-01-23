@@ -47,6 +47,7 @@ int main()
 {
     int sockfd, connfd;
     struct sockaddr_in servaddr, cli;
+    char buff[10] = {0};
 
     // socket create and verify
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -71,8 +72,15 @@ int main()
     else
         printf("Connected to server..\n");
 
-    // function for chat
-    client_func(sockfd);
+    read(sockfd, buff, 10);
+
+    if (strncmp(buff, "yes", strlen(buff)) == 0){
+
+        // function for chat
+        client_func(sockfd);
+    }
+    else 
+        printf("Max clients reached!\n");
 
     // close the socket
     close(sockfd);

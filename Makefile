@@ -3,14 +3,15 @@ BIN_DIR=bin
 SRC_DIR=src
 ROOT_DIR=root
 FILES_DIR=files
+OPTIONS=-g
 
 .PHONY: all clean
 
 all: final
 
 final: $(BIN_DIR)/server.o $(BIN_DIR)/operations.o $(BIN_DIR)/utils.o $(SRC_DIR)/client.c
-	$(CC) $(BIN_DIR)/server.o $(BIN_DIR)/operations.o $(BIN_DIR)/utils.o -lpthread -o $(BIN_DIR)/server
-	$(CC) $(SRC_DIR)/client.c -o $(BIN_DIR)/client
+	$(CC) $(OPTIONS) $(BIN_DIR)/server.o $(BIN_DIR)/operations.o $(BIN_DIR)/utils.o -lpthread -o $(BIN_DIR)/server
+	$(CC) $(OPTIONS) $(SRC_DIR)/client.c -o $(BIN_DIR)/client
 
 $(BIN_DIR)/operations.o: $(SRC_DIR)/operations.c
 	$(CC) -c $(SRC_DIR)/operations.c -o $(BIN_DIR)/operations.o

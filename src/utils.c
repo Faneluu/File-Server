@@ -116,9 +116,7 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
     uint32_t bytesPath, offset, bytesContent;
 
     // check paramters and start with bytesPath
-    //printf("Token is: '%s'\n", token);
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at bytesPath: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
     
@@ -127,17 +125,18 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
         return false;
 
     // check filePath
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at filePath: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
     
     filePath = calloc(bytesPath + 1, sizeof(char));
-    memcpy(filePath, token, bytesPath);
+    if (bytesPath > strlen(token))
+        memcpy(filePath, token, strlen(token));
+    else 
+        memcpy(filePath, token, bytesPath);
 
     // check offset
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at offset: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL){
         free(filePath);
         return false;
@@ -150,8 +149,7 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
     }
 
     // check bytesContent
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at bytesContent: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL){
         free(filePath);
         return false;
@@ -164,15 +162,17 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
     }
 
     // check newContent
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at newContent: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL){
         free(filePath);
         return false;
     }
 
     newContent = calloc(bytesContent + 1, sizeof(char));
-    memcpy(newContent, token, bytesContent);
+    if (bytesContent > strlen(token))
+        memcpy(newContent, token, strlen(token));
+    else 
+        memcpy(newContent, token, bytesContent);
 
     // check if has more parameters than required
     token = strtok_r(NULL, ";\n", &savePtr);
@@ -199,9 +199,7 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
 
     // check paramters and start with bytesPath
 
-    //printf("Token is: '%s'\n", token);
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at bytes1: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
     
@@ -210,16 +208,18 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
         return false;
 
     // check filePath
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at filePath: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
     
     str1 = calloc(bytes1 + 1, sizeof(char));
-    memcpy(str1, token, bytes1);
+    if (bytes1 > strlen(token))
+        memcpy(str1, token, strlen(token));
+    else 
+        memcpy(str1, token, bytes1);
 
     // check bytesContent
-    token = strtok_r(NULL, " ;\n", &savePtr);
+    token = strtok_r(NULL, ";\n", &savePtr);
     //printf("Token is at bytes2: '%s'\n", token);
     if (token == NULL){
         free(str1);
@@ -233,7 +233,7 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
     }
 
     // check fileContent
-    token = strtok_r(NULL, " ;\n", &savePtr);
+    token = strtok_r(NULL, ";\n", &savePtr);
     //printf("Token is at fileContent: '%s'\n", token);
     if (token == NULL){
         free(str1);
@@ -241,10 +241,13 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
     }
 
     str2 = calloc(bytes2 + 1, sizeof(char));
-    memcpy(str2, token, bytes2);
+    if (bytes2 > strlen(token))
+        memcpy(str2, token, strlen(token));
+    else 
+        memcpy(str2, token, bytes2);
 
     // check if has more parameters than required
-    token = strtok_r(NULL, " ;\n", &savePtr);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token != NULL){
         free(str1);
         free(str2);
@@ -261,14 +264,11 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
 
 bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath)
 {
-    //printf("Enter check_two_parameters()!\n");
     char *filePath;
     uint32_t bytesPath;
 
     // check bytesPath
-    //printf("Token is: '%s'\n", token);
-    token = strtok_r(NULL, " ;\n", &savePtr);
-    //printf("Token is at bytesPath: '%s'\n", token);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
 
@@ -277,16 +277,18 @@ bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char
         return false;
 
     // check filePath
-    token = strtok_r(NULL, " ;\n", &savePtr);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
 
-    //printf("Token is at filePath: '%s'\n", token);
     filePath = calloc(bytesPath + 1 , sizeof(char));
-    memcpy(filePath, token, bytesPath);
+    if (bytesPath > strlen(token))
+        memcpy(filePath, token, strlen(token));
+    else 
+        memcpy(filePath, token, bytesPath);
 
     // check nr parameters
-    token = strtok_r(NULL, " ;\n", &savePtr);
+    token = strtok_r(NULL, ";\n", &savePtr);
     if (token != NULL){
         free(filePath);
         return false;
@@ -295,7 +297,6 @@ bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char
     (*pBytesPath) = bytesPath;
     (*pFilePath) = filePath;
 
-    //printf("Exit check_two_parameters()!\n");
     return true;
 }
 

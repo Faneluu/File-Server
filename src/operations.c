@@ -4,23 +4,24 @@ char *list_operation()
 {
     printf("Enter list_operation!\n");
     char *msg, *str;
-    uint32_t msgSize = 20;
+    uint32_t msgSize = 20, bytesRead = 0;
 
-    str = calloc(nrFiles * PATH_LENGTH + nrFiles + 1, sizeof(char));
-    msg = calloc(nrFiles * PATH_LENGTH + nrFiles + 1 + msgSize, sizeof(char));
+    str = calloc((MAX_FILES * PATH_LENGTH + 1), sizeof(char));
+    msg = calloc((MAX_FILES * PATH_LENGTH + msgSize + 1), sizeof(char));
 
     // lock mutex
     pthread_mutex_lock(&mtx);
-
     for (int i = 0; i < nrFiles; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
         str[strlen(str)] = ' ';
+        // bytesRead += strlen(listFiles[i]);
+        // str[bytesRead] = ' ';
+        // bytesRead++;
     }
-
     
-    //printf("str is: %s\n", str);
+    //printf("str is: '%s'\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
-    //printf("msg is: %s\n", msg);
+    //printf("msg is: '%s'\n", msg);
 
     // unlock mutex
     pthread_mutex_unlock(&mtx);
@@ -162,8 +163,8 @@ char *delete_operation(char *token, char *savePtr)
         }
     }   
     
-    printf("Update file\n");
-    // update the file
+    printf("Delete file\n");
+    // delete file
     if (changeFiles){
         realPath = add_root(filePath);
         remove(realPath);
@@ -241,6 +242,8 @@ char *update_operation(char *token, char *savePtr)
     printf("Enter update_operation()!\n");
     char *msg, *filePath, *newContent, *realPath;
     uint32_t bytesPath, offset, bytesContent;
+    int fd;
+    struct stat updateStats;
 
     // lock mutex
     pthread_mutex_lock(&mtx);
@@ -256,12 +259,26 @@ char *update_operation(char *token, char *savePtr)
 
         FILE *f = fopen(realPath, "r+");
 
+        fd = fileno(f);
+
+        fstat(fd, &updateStats);
+
+        free(realPath);
+
+        if (offset > updateStats.st_size){
+            msg = set_status(BAD_ARGUMENTS);
+            fclose(f);
+            free(filePath);
+            free(newContent);
+            pthread_mutex_unlock(&mtx);
+            return msg;
+        }
+
         fseek(f, offset, SEEK_SET);
         fprintf(f, "%s", newContent);
-        
 
         fclose(f);
-        free(realPath);
+        
         msg = set_status(SUCCESS); 
     }
     else 
@@ -277,6 +294,9 @@ char *update_operation(char *token, char *savePtr)
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "UPDATE, %s", filePath);
     write_log();
+
+    free(filePath);
+    free(newContent);
 
     printf("Exit update_operation() with msg: '%s'!\n", msg);
     return msg;
@@ -344,7 +364,7 @@ char *select_command(char *buff)
 
         token = strtok_r(str, " ;\n", &savePtr);
         operation = atoi(token);
-        printf("Token is: '%s'\n", token);
+        //printf("Token is: '%s'\n", token);
 
         if (operation == 0 && strncmp(token,"0", strlen(token)) != 0)
             operation = 99;
