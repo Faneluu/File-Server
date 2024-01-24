@@ -1,5 +1,0 @@
-/istorie/cuza
-/filozfie/nietzsche
-/literatura/1984
-/antichitate/caesar
-/istorie/napoleon
