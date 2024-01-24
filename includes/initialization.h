@@ -39,7 +39,7 @@
 #define MAX_FILES 10
 #define LENGTH 100
 #define PATH_LENGTH 20
-#define CLIENTS 1
+#define CLIENTS 2
 #define EVENTS (CLIENTS + 1)
 #define FIRST_WORDS 10
 

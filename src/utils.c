@@ -2,7 +2,6 @@
 
 bool add_file(char *filePath)
 {
-    printf("Enter add_file() with '%s'\n", filePath);
     // save the file
     FILE *f = fopen(ALL_FILES, "a");
 
@@ -445,7 +444,6 @@ int compareWords(const void *a, const void *b)
 
 files getSearchFile(char *file)
 {
-    //printf("Enter getSearchFile() with file: %s!\n", file);
     files searchFile = {0};
     wordsFile *words;
     int nrWords = 0, index;
@@ -493,8 +491,6 @@ files getSearchFile(char *file)
     free(str);
     free(filePath);
 
-    //printf("Exit getSearchFile()!\n");
-
     return searchFile;
 }
 
@@ -502,19 +498,13 @@ void indexFiles()
 {
     nrSearchFiles = 0;
 
-    check_nr_files();
 
     for (int i = 0; i < MAX_FILES + 1; i ++){
 
         if (listFiles[i][0] != '\0'){
-            //printf("in indexFiles() listFile[%d] is: %s\n", i, listFiles[i]);
-            //printf("search[%d]: '%s' \n", nrSearchFiles);
             memset(searchFiles[nrSearchFiles].filename, '\0', strlen(searchFiles[nrSearchFiles].filename));
-            
             searchFiles[nrSearchFiles] = getSearchFile(listFiles[i]);
-            
             memcpy(searchFiles[nrSearchFiles].filename, listFiles[i], strlen(listFiles[i]));
-            //printf("in indexFiles() listFile[%d] is: %s\n", i, listFiles[i]);
             nrSearchFiles++;
         }
     }
@@ -522,28 +512,27 @@ void indexFiles()
 
 bool check_nr_files()
 {
-    //printf("Inside check_nr_files()\n");
     int count = 0;
     for (int i = 0; i < MAX_FILES + 1; i ++){
-        //printf("listFile[%d] is: %s\n", i, listFiles[i]);
         if (listFiles[i][0] != '\0')
             count++;
     }
 
-    //printf("Count is: %d and MAX_FILES: %d\n", count, MAX_FILES);
+    printf("Count is: %d and MAX_FILES: %d\n", count, MAX_FILES);
 
-    if (count == MAX_FILES && isMoveOperation)
-        return true;
+    if (count == MAX_FILES && isMoveOperation){
+        printf("First case!!\n");
+        return true;}
 
-    if (count >= MAX_FILES)
-        return false;
+    if (count >= MAX_FILES){
+        printf("Second case!!\n");
+        return false;}
 
     return true;
 }
 
 int index_listFiles()
 {
-    //printf("Inside index_listFiles()\n");
     for (int i = 0; i < MAX_FILES + 1; i ++){
         if (listFiles[i][0] == '\0'){
             printf("Free index: %d\n", i);
@@ -551,6 +540,5 @@ int index_listFiles()
         }
     }
 
-    //printf("Free index: 0\n");
     return 0;
 }

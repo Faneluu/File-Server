@@ -1,4 +1,5 @@
-/istorie/napoleon
-/filozofie/voltaire
+/istorie/cuza
+/filozfie/nietzsche
+/literatura/1984
 /antichitate/caesar
-/literatura/mizerabilii
+/istorie/napoleon

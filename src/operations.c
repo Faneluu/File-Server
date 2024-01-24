@@ -2,7 +2,6 @@
 
 char *list_operation()
 {
-    printf("Enter list_operation!\n");
     char *msg, *str;
     uint32_t msgSize = 20, bytesRead = 0;
 
@@ -35,7 +34,6 @@ char *list_operation()
 
 char *download_operation(char *token, char *savePtr)
 {
-    printf("Enter download_operation()!\n");
     char *msg, *filePath, *realPath;
     uint32_t bytesPath;
 
@@ -83,7 +81,6 @@ char *download_operation(char *token, char *savePtr)
 
 char *upload_operation(char *token, char *savePtr)
 {
-    printf("Enter upload_operation!\n");
     char *msg, *filePath, *fileContent, *realPath;
     uint32_t bytesPath, bytesContent;
     int index;
@@ -155,7 +152,6 @@ char *upload_operation(char *token, char *savePtr)
 
 char *delete_operation(char *token, char *savePtr)
 {
-    printf("Enter delete_operation()!\n");
     char *msg, *filePath, *realPath;
     uint32_t bytesPath, allFiles;
     bool changeFiles = false;
@@ -177,8 +173,7 @@ char *delete_operation(char *token, char *savePtr)
             break;
         }
     }   
-    check_nr_files();
-    printf("Delete file\n");
+    
     // delete file
     if (changeFiles){
         realPath = add_root(filePath);
@@ -215,7 +210,6 @@ char *delete_operation(char *token, char *savePtr)
 
 char *move_operation(char *token, char *savePtr)
 {
-    printf("Enter move_operation()!\n");
     char *msg, *inFilePath, *outFilePath;
     uint32_t bytesInFile, bytesOutFile;
 
@@ -255,7 +249,6 @@ char *move_operation(char *token, char *savePtr)
 
 char *update_operation(char *token, char *savePtr)
 {
-    printf("Enter update_operation()!\n");
     char *msg, *filePath, *newContent, *realPath;
     uint32_t bytesPath, offset, bytesContent;
     int fd;
@@ -314,13 +307,11 @@ char *update_operation(char *token, char *savePtr)
     free(filePath);
     free(newContent);
 
-    printf("Exit update_operation() with msg: '%s'!\n", msg);
     return msg;
 }
 
 char *search_operation(char *token, char *savePtr)
 {
-    printf("Enter search_operation!\n");
     char *msg, *str, *word;
     uint32_t msgSize = 20, bytesWord;
 
