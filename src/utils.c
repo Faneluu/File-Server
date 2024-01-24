@@ -2,15 +2,12 @@
 
 bool add_file(char *filePath)
 {
+    printf("Enter add_file() with '%s'\n", filePath);
     // save the file
-    memcpy(listFiles[nrFiles], filePath, strlen(filePath));
     FILE *f = fopen(ALL_FILES, "a");
 
-    if (listFiles[nrFiles -1][0] != '\0')
-        fprintf(f, "\n");
-
-    fprintf(f, "%s", listFiles[nrFiles]);
-    nrFiles++; 
+    if (filePath[0] != '\0')
+        fprintf(f, "%s\n", filePath);
     
     fclose(f);
     return true;
@@ -18,7 +15,6 @@ bool add_file(char *filePath)
 
 char *add_root(char *filePath)
 {
-    printf("Enter add_root() with filePath: '%s'\n", filePath);
     char *root;
 
     root = calloc((strlen(ROOT) + strlen(filePath) + 2), sizeof(char));
@@ -34,8 +30,6 @@ char *add_root(char *filePath)
 
 bool make_dir(const char *dirName)
 {
-    printf("Enter make_dir(), with dirnName: '%s'\n", dirName);
-
     DIR *dir = opendir(dirName);
 
     if (dir == NULL){
@@ -71,7 +65,6 @@ char *set_status(uint32_t status)
 
 bool check_dir(char *filePath)
 {
-    printf("Enter check_dir with filePath: '%s'\n", filePath);
     char *str, *token, *savePtr, *realPath;
     int i = 1, nrDir = 0;
 
@@ -89,17 +82,13 @@ bool check_dir(char *filePath)
     }
 
     // don t have dir
-    if (!nrDir){
-        printf("Do not have dir!\n");
+    if (!nrDir)
         return true;
-    }
 
     // check dir
     str = calloc((strlen(filePath) + 1), sizeof(char));
     memcpy(str, filePath, strlen(filePath));
     token = strtok_r(str, "/", &savePtr);
-
-    printf("dir to check is: '%s'\n", token);
 
     realPath = add_root(token);
 
@@ -116,9 +105,7 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
     uint32_t bytesPath, offset, bytesContent;
 
     // check paramters and start with bytesPath
-    printf("Token is: '%s'\n", token);
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at bytesPath: '%s'\n", token);
     if (token == NULL)
         return false;
     
@@ -128,16 +115,17 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
 
     // check filePath
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at filePath: '%s'\n", token);
     if (token == NULL)
         return false;
     
-    filePath = calloc((strlen(token) + 1), sizeof(char));
-    memcpy(filePath, token, strlen(token));
+    filePath = calloc(bytesPath + 1, sizeof(char));
+    if (bytesPath > strlen(token))
+        memcpy(filePath, token, strlen(token));
+    else 
+        memcpy(filePath, token, bytesPath);
 
     // check offset
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at offset: '%s'\n", token);
     if (token == NULL){
         free(filePath);
         return false;
@@ -151,7 +139,6 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
 
     // check bytesContent
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at bytesContent: '%s'\n", token);
     if (token == NULL){
         free(filePath);
         return false;
@@ -165,14 +152,16 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
 
     // check newContent
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at newContent: '%s'\n", token);
     if (token == NULL){
         free(filePath);
         return false;
     }
 
-    newContent = calloc((strlen(token) + 1), sizeof(char));
-    memcpy(newContent, token, strlen(token));
+    newContent = calloc(bytesContent + 1, sizeof(char));
+    if (bytesContent > strlen(token))
+        memcpy(newContent, token, strlen(token));
+    else 
+        memcpy(newContent, token, bytesContent);
 
     // check if has more parameters than required
     token = strtok_r(NULL, ";\n", &savePtr);
@@ -193,15 +182,11 @@ bool check_five_parameters(char *token, char *savePtr, uint32_t *pBytesPath, uin
 
 bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char **pStr1, uint32_t *pBytes2, char **pStr2)
 {
-    printf("Enter check_four_parameters()!\n");
     char *str1, *str2;
     uint32_t bytes1, bytes2;
 
     // check paramters and start with bytesPath
-
-    printf("Token is: '%s'\n", token);
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at bytes1: '%s'\n", token);
     if (token == NULL)
         return false;
     
@@ -211,16 +196,17 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
 
     // check filePath
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at filePath: '%s'\n", token);
     if (token == NULL)
         return false;
     
-    str1 = calloc((strlen(token) + 1), sizeof(char));
-    memcpy(str1, token, strlen(token));
+    str1 = calloc(bytes1 + 1, sizeof(char));
+    if (bytes1 > strlen(token))
+        memcpy(str1, token, strlen(token));
+    else 
+        memcpy(str1, token, bytes1);
 
     // check bytesContent
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at bytes2: '%s'\n", token);
     if (token == NULL){
         free(str1);
         return false;
@@ -234,14 +220,16 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
 
     // check fileContent
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at fileContent: '%s'\n", token);
     if (token == NULL){
         free(str1);
         return false;
     }
 
-    str2 = calloc((strlen(token) + 1), sizeof(char));
-    memcpy(str2, token, strlen(token));
+    str2 = calloc(bytes2 + 1, sizeof(char));
+    if (bytes2 > strlen(token))
+        memcpy(str2, token, strlen(token));
+    else 
+        memcpy(str2, token, bytes2);
 
     // check if has more parameters than required
     token = strtok_r(NULL, ";\n", &savePtr);
@@ -261,14 +249,11 @@ bool check_four_parameters(char *token, char *savePtr, uint32_t *pBytes1, char *
 
 bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char **pFilePath)
 {
-    printf("Enter check_two_parameters()!\n");
     char *filePath;
     uint32_t bytesPath;
 
     // check bytesPath
-    printf("Token is: '%s'\n", token);
     token = strtok_r(NULL, ";\n", &savePtr);
-    printf("Token is at bytesPath: '%s'\n", token);
     if (token == NULL)
         return false;
 
@@ -280,9 +265,12 @@ bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char
     token = strtok_r(NULL, ";\n", &savePtr);
     if (token == NULL)
         return false;
-    printf("Token is at filePath: '%s'\n", token);
-    filePath = calloc((strlen(token) + 1), sizeof(char));
-    memcpy(filePath, token, strlen(token));
+
+    filePath = calloc(bytesPath + 1 , sizeof(char));
+    if (bytesPath > strlen(token))
+        memcpy(filePath, token, strlen(token));
+    else 
+        memcpy(filePath, token, bytesPath);
 
     // check nr parameters
     token = strtok_r(NULL, ";\n", &savePtr);
@@ -294,7 +282,6 @@ bool check_two_parameters(char *token, char *savePtr, uint32_t *pBytesPath, char
     (*pBytesPath) = bytesPath;
     (*pFilePath) = filePath;
 
-    printf("Exit check_two_parameters()!\n");
     return true;
 }
 
@@ -309,7 +296,7 @@ bool check_length(const char *f1, const char *f2)
 bool find_file(const char *filePath)
 {
     // find the file
-    for (int i = 0; i < nrFiles; i++){
+    for (int i = 0; i < MAX_FILES; i++){
         if (check_length(listFiles[i], filePath)){
             return true;
         }
@@ -333,7 +320,6 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
 
     fd = fileno(f);
     fstat(fd, &inFileStats);
-    printf("File:%s has size: %d\n", inFilePath, inFileStats.st_size);
 
     snprintf(str, LENGTH, "2;%d;%s;%d;", bytesOutFile, outFilePath, inFileStats.st_size);
 
@@ -349,15 +335,15 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
     fclose(f);
     free(inRealPath);
 
+    isMoveOperation = true;
+
     // unlock mutex
     pthread_mutex_unlock(&mtx);
 
-    printf("Prepare to enter upload_operation() with str: '%s'!\n", str);
     newToken = strtok_r(str, ";\n", &newSavePtr);
 
     msg = upload_operation(newToken, newSavePtr);
 
-    printf("message: %s\n", msg);
     free(str);
     
     // send error status
@@ -366,7 +352,6 @@ bool send_upload_operation(uint32_t bytesOutFile, char *inFilePath, char *outFil
         return false;
     }
 
-    printf("Exit send_upload_operation()!\n");
     free(msg);
     return true;
 }
@@ -378,7 +363,6 @@ char *send_delete_operation(uint32_t bytesInFile, char *inFilePath)
     str = calloc(BUFFER_SIZE, sizeof(char));
     snprintf(str, LENGTH, "4;%d;%s\n", bytesInFile, inFilePath);
 
-    printf("Prepare to enter delete_operation with str: '%s'\n", str);
     newToken = strtok_r(str, ";\n", &newSavePtr);
     msg = delete_operation(newToken, newSavePtr);
 
@@ -405,7 +389,6 @@ bool write_log()
     fprintf(f, "%s\n", timeStr);
     fclose(f);
 
-    printf("Enter write_log() timeStr: '%s'\n", timeStr);
     free(timeStr);
 
     pthread_mutex_unlock(&logMtx);
@@ -420,8 +403,6 @@ char *show_instructions()
     uint32_t buffSize = 2 * LENGTH;
 
     stat(INSTRUCTIONS_FILE, &instructionsStats);
-
-    printf("%s size: %d\n", INSTRUCTIONS_FILE, instructionsStats.st_size);
 
     msg = calloc(instructionsStats.st_size + 1, sizeof(char));
     buff = calloc(buffSize, sizeof(char));
@@ -443,3 +424,133 @@ char *show_instructions()
     return msg;
 }
 
+int first_appearance(wordsFile **words, int size, char *wordName)
+{
+    for (int i = 0; i < size; i ++){
+        if (check_length((*words)[i].word, wordName))
+            return i;
+    }
+
+    //printf("Exit first_appearance()!\n");
+    return -1;
+}
+
+int compareWords(const void *a, const void *b)
+{
+    wordsFile wordA = *(wordsFile *)a;
+    wordsFile wordB = *(wordsFile *)b;
+
+    return wordB.count - wordA.count;
+}
+
+files getSearchFile(char *file)
+{
+    //printf("Enter getSearchFile() with file: %s!\n", file);
+    files searchFile = {0};
+    wordsFile *words;
+    int nrWords = 0, index;
+    char *buff, *str, *token, *savePtr, *filePath;
+    
+    buff = calloc(LENGTH + 1, sizeof(char));
+    str = calloc(LENGTH + 1, sizeof(char));
+    words = calloc(LENGTH, sizeof(wordsFile));
+
+    filePath = add_root(file);
+    FILE *f = fopen(filePath, "r");
+
+    while (fgets(buff, BUFFER_SIZE, f) != NULL){
+        memcpy(str, buff, strlen(buff));
+
+        // take every word
+        token = strtok_r(str, " ,?!.\n", &savePtr);
+        while (token != NULL){
+            index = first_appearance(&words, nrWords, token);
+            
+            // is first appearance
+            if (index == -1){
+                memcpy(words[nrWords].word, token, strlen(token));
+                words[nrWords].count++;
+                nrWords++;
+            }
+            else
+                words[index].count++;
+
+            token = strtok_r(NULL, " ,?!.\n", &savePtr);
+        }
+        memset(str, '\0', strlen(str));
+    }
+
+    qsort(words, nrWords, sizeof(wordsFile), compareWords);
+
+    for (int i = 0; i < FIRST_WORDS; i ++){
+        memcpy(searchFile.freqWords[i].word, words[i].word, strlen(words[i].word));
+        searchFile.freqWords[i].count = words[i].count;
+    }
+
+    fclose(f);
+    free(buff);
+    free(words);
+    free(str);
+    free(filePath);
+
+    //printf("Exit getSearchFile()!\n");
+
+    return searchFile;
+}
+
+void indexFiles()
+{
+    nrSearchFiles = 0;
+
+    check_nr_files();
+
+    for (int i = 0; i < MAX_FILES + 1; i ++){
+
+        if (listFiles[i][0] != '\0'){
+            //printf("in indexFiles() listFile[%d] is: %s\n", i, listFiles[i]);
+            //printf("search[%d]: '%s' \n", nrSearchFiles);
+            memset(searchFiles[nrSearchFiles].filename, '\0', strlen(searchFiles[nrSearchFiles].filename));
+            
+            searchFiles[nrSearchFiles] = getSearchFile(listFiles[i]);
+            
+            memcpy(searchFiles[nrSearchFiles].filename, listFiles[i], strlen(listFiles[i]));
+            //printf("in indexFiles() listFile[%d] is: %s\n", i, listFiles[i]);
+            nrSearchFiles++;
+        }
+    }
+}
+
+bool check_nr_files()
+{
+    //printf("Inside check_nr_files()\n");
+    int count = 0;
+    for (int i = 0; i < MAX_FILES + 1; i ++){
+        //printf("listFile[%d] is: %s\n", i, listFiles[i]);
+        if (listFiles[i][0] != '\0')
+            count++;
+    }
+
+    //printf("Count is: %d and MAX_FILES: %d\n", count, MAX_FILES);
+
+    if (count == MAX_FILES && isMoveOperation)
+        return true;
+
+    if (count >= MAX_FILES)
+        return false;
+
+    return true;
+}
+
+int index_listFiles()
+{
+    //printf("Inside index_listFiles()\n");
+    for (int i = 0; i < MAX_FILES + 1; i ++){
+        if (listFiles[i][0] == '\0'){
+            printf("Free index: %d\n", i);
+            return i;
+        }
+    }
+
+    //printf("Free index: 0\n");
+    return 0;
+}

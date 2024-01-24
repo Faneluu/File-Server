@@ -1,2 +1,4 @@
-/newAtm/newPso.txt
-/atm/cripto.txt
+/istorie/napoleon
+/filozofie/voltaire
+/antichitate/caesar
+/literatura/mizerabilii
