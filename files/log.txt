@@ -1,20 +1,21 @@
-24-01-2024, 15:50:31, LIST
-24-01-2024, 15:51:48, SEARCH, ce
-24-01-2024, 15:54:09, LIST
-24-01-2024, 15:54:46, UPLOAD, /istorie/napoleon
-24-01-2024, 15:55:15, DOWNLOAD
-24-01-2024, 15:56:48, UPLOAD, /filozofie/voltaire
-24-01-2024, 15:57:52, UPLOAD, /istorie/cesar
-24-01-2024, 15:58:31, MOVE, /istorie/cesar, /antichitate/caesar
-24-01-2024, 16:00:14, UPLOAD, /antichitate/cleopatra
-24-01-2024, 16:01:00, DELETE, /antichitate/cleopatra
-24-01-2024, 16:01:08, LIST
-24-01-2024, 16:01:48, SEARCH, refacut
-24-01-2024, 16:02:32, LIST
-24-01-2024, 16:03:11, UPDATE, /filozofie/voltaire
-24-01-2024, 16:04:55, UPLOAD, /literatura/mizarabilii
-24-01-2024, 16:05:20, DOWNLOAD
-24-01-2024, 16:05:53, DOWNLOAD
-24-01-2024, 16:06:14, SEARCH, Napoleon
-24-01-2024, 16:06:26, LIST
-24-01-2024, 16:17:32, MOVE, /literatura/mizarabilii, /literatura/mizerabilii
+24-01-2024, 16:28:56, UPLOAD, /istorie/cuza
+24-01-2024, 16:30:27, UPLOAD, /filozfie/nietzsche
+24-01-2024, 16:30:58, UPLOAD, /stiinte/tesla
+24-01-2024, 16:31:32, UPLOAD, /stiinte/newton
+24-01-2024, 16:34:28, DELETE, /stiinte/newton
+24-01-2024, 16:43:28, UPLOAD, /literatura/1984
+24-01-2024, 16:43:43, DOWNLOAD
+24-01-2024, 16:43:48, LIST
+24-01-2024, 16:44:33, UPLOAD, /istorie/caesar
+24-01-2024, 16:45:06, MOVE, /istorie/caesar, /antichitate/caesar
+24-01-2024, 16:45:48, DELETE, /stiinte/tesla
+24-01-2024, 16:48:27, LIST
+24-01-2024, 16:49:01, UPLOAD, /istorie/napoleon
+24-01-2024, 16:49:04, LIST
+24-01-2024, 16:51:53, UPDATE, /istorie/napoleon
+24-01-2024, 16:52:10, LIST
+24-01-2024, 16:52:24, SEARCH, reformat
+24-01-2024, 16:52:36, SEARCH, cuza
+24-01-2024, 16:53:13, UPLOAD, /stiinte/fanelu
+24-01-2024, 16:53:40, DELETE, /stiinte/fanelu
+24-01-2024, 16:53:46, LIST

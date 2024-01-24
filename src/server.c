@@ -50,8 +50,6 @@ void *handle_client(void *args)
     int myEpfd, flags, clientSocket = *((int*)args);
     struct epoll_event threadEv = {0}, threadRetEv = {0};
 
-    printf("Have %d threads at start\n", nrThreads);
-
     myEpfd = epoll_create(1);
 
     flags = fcntl(clientSocket, F_GETFL, 0);
@@ -131,8 +129,7 @@ void *handle_client(void *args)
     printMaxClientsReached = false;
     close(myEpfd);
     close(clientSocket);
-    printf("Have %d threads at exit\n", nrThreads);
-    
+
     pthread_mutex_unlock(&mtx);
 
     pthread_cond_signal(&listenCond);
@@ -149,8 +146,6 @@ void *handle_indexing(void *args)
 
         while (!canIndex && !terminate)
             pthread_cond_wait(&indexCond, &indexMtx);
-
-        //printf("index working\n");
 
         if (!terminate)
             indexFiles();
@@ -178,7 +173,6 @@ void *handle_connections(void *args)
         }
 
         if (ret_ev.data.fd == listener && (ret_ev.events & EPOLLIN) != 0){
-            printf("LISTEN on client with %d threads\n", nrThreads);
             // accept the data packet from client and verify
             int newSocket = accept(listener, (SA*)&cli, &len);
             if (newSocket < 0){
