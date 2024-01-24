@@ -17,7 +17,7 @@ Precizari:
 - pe timpul rularii aplicatiei se retine un vector cu toate fisierele disponibile in acel moment, care se va modifica daca se apeleaza MOVE, DELETE sau UPLOAD;
 - fiecare operatie se va salva intr-un fisier "log.txt";
 - se vor citi cati octeti sunt precizati inainte de calea fisierului sau de ce va contine acesta, etc; daca este un numar mai mic de octei decat lungimea sirului, se vor citi doar numarul de octeti trimisi de client, altfel se va citi intreg string-ul;
-- se va testa numarul exact de parametrii, in functie de cerintele fiecarei comenzi; de asemenea si ca numarul de octeti trimisi si fie de tipul intreg;
+- se va testa numarul exact de parametrii, in functie de cerintele fiecarei comenzi; de asemenea si ca numarul de octeti trimisi sa fie de tipul intreg;
 - la operatia UPDATE se va primi "4 (OUT_OF_MEMORY)" daca offset-ul trimis depaseste dimensiunea fisierului;
 - se poate crea doar un subdirector fata de root ("/dir/file.txt");
 - exista un numar limitat de fisiere ce pot fi incarcate; daca se va incerca adaugarea unui nou fisier si este atinsa capacitatea maxima, se va primi "4 (OUT_OF_MEMORY)";
