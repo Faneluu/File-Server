@@ -47,7 +47,7 @@ int main()
 {
     int sockfd, connfd;
     struct sockaddr_in servaddr, cli;
-    char buff[10] = {0};
+    uint32_t net_stats, stats;
 
     // socket create and verify
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -72,9 +72,10 @@ int main()
     else
         printf("Connected to server..\n");
 
-    read(sockfd, buff, 10);
+    read(sockfd, &net_stats, sizeof(net_stats));
+    stats = ntohl(net_stats);
 
-    if (strncmp(buff, "yes", strlen(buff)) == 0){
+    if (stats != 8){
 
         // function for chat
         client_func(sockfd);

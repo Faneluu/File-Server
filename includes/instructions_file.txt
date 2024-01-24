@@ -1,6 +1,6 @@
 
 1. LIST - 0
-    IN: cod_operație;
+    IN: cod_operație
 
 2. DOWNLOAD - 1
     IN: cod_operație;nr. octeți cale fișier;calea fișierului

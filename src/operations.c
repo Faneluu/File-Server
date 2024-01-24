@@ -11,17 +11,16 @@ char *list_operation()
 
     // lock mutex
     pthread_mutex_lock(&mtx);
-    for (int i = 0; i < nrFiles; i ++){
+
+    // read every file
+    for (int i = 0; i < MAX_FILES + 1; i ++){
         memcpy(str + strlen(str), listFiles[i], strlen(listFiles[i]));
-        str[strlen(str)] = ' ';
-        // bytesRead += strlen(listFiles[i]);
-        // str[bytesRead] = ' ';
-        // bytesRead++;
+
+        if (str[0] != '\0')
+            str[strlen(str)] = ' ';
     }
     
-    //printf("str is: '%s'\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
-    //printf("msg is: '%s'\n", msg);
 
     // unlock mutex
     pthread_mutex_unlock(&mtx);
@@ -87,6 +86,7 @@ char *upload_operation(char *token, char *savePtr)
     printf("Enter upload_operation!\n");
     char *msg, *filePath, *fileContent, *realPath;
     uint32_t bytesPath, bytesContent;
+    int index;
 
     // lock mutex
     pthread_mutex_lock(&mtx);
@@ -97,8 +97,18 @@ char *upload_operation(char *token, char *savePtr)
         return msg;
     }
 
+    if (!check_nr_files()){
+        msg = set_status(OUT_OF_MEMORY);
+        free(filePath);
+        free(fileContent);
+        pthread_mutex_unlock(&mtx);
+        return msg;
+    }
+
     if (!check_dir(filePath)){
         msg = set_status(BAD_ARGUMENTS);
+        free(filePath);
+        free(fileContent);
         pthread_mutex_unlock(&mtx);
         return msg;
     }
@@ -111,10 +121,14 @@ char *upload_operation(char *token, char *savePtr)
     // write the content
     fprintf(f, "%s", fileContent);
     fclose(f);
+    
+    index = index_listFiles();
 
     // add if doesn t exist
-    if (!find_file(filePath))
-        add_file(filePath);
+    if (!find_file(filePath)){
+        memcpy(listFiles[index], filePath, strlen(filePath));
+        add_file(listFiles[index]);
+    }
 
     canIndex = true;
 
@@ -123,9 +137,11 @@ char *upload_operation(char *token, char *savePtr)
     
     pthread_cond_signal(&indexCond);
 
-    memset(sendToLog, '\0', strlen(sendToLog));
-    snprintf(sendToLog, LENGTH, "UPLOAD, %s", filePath);
-    write_log();
+    if (!isMoveOperation){
+        memset(sendToLog, '\0', strlen(sendToLog));
+        snprintf(sendToLog, LENGTH, "UPLOAD, %s", filePath);
+        write_log();
+    }
 
     // free memory
     free(realPath);
@@ -133,7 +149,7 @@ char *upload_operation(char *token, char *savePtr)
     free(fileContent);
      
     msg = set_status(SUCCESS);
-    printf("Exit upload_operation() with msg: '%s'!\n", msg);
+    //printf("Exit upload_operation() with msg: '%s'!\n", msg);
     return msg;
 }
 
@@ -153,16 +169,15 @@ char *delete_operation(char *token, char *savePtr)
         return msg;
     }
 
-    printf("Check file\n");
     // see if file exists and remove it
-    for (int i = 0; i < nrFiles; i ++){
+    for (int i = 0; i < MAX_FILES + 1; i ++){
         if (check_length(listFiles[i], filePath)){
             memset(listFiles[i], '\0', strlen(listFiles[i]));
             changeFiles = true;
             break;
         }
     }   
-    
+    check_nr_files();
     printf("Delete file\n");
     // delete file
     if (changeFiles){
@@ -172,10 +187,7 @@ char *delete_operation(char *token, char *savePtr)
         FILE *f = fopen(ALL_FILES, "w");
         fclose(f);
 
-        allFiles = nrFiles;
-        nrFiles = 0;
-
-        for (int i = 0; i < allFiles; i ++)
+        for (int i = 0; i < MAX_FILES + 1; i ++)
             add_file(listFiles[i]);
 
         free(realPath);
@@ -191,9 +203,11 @@ char *delete_operation(char *token, char *savePtr)
 
     pthread_cond_signal(&indexCond);
 
-    memset(sendToLog, '\0', strlen(sendToLog));
-    snprintf(sendToLog, LENGTH, "DELETE, %s", filePath);
-    write_log();
+    if (!isMoveOperation){
+        memset(sendToLog, '\0', strlen(sendToLog));
+        snprintf(sendToLog, LENGTH, "DELETE, %s", filePath);
+        write_log();
+    }
 
     free(filePath);
     return msg;
@@ -227,6 +241,8 @@ char *move_operation(char *token, char *savePtr)
 
     // delete first file path
     msg = send_delete_operation(bytesInFile, inFilePath);
+
+    isMoveOperation = false;
 
     memset(sendToLog, '\0', strlen(sendToLog));
     snprintf(sendToLog, LENGTH, "MOVE, %s, %s", inFilePath, outFilePath);
@@ -266,7 +282,7 @@ char *update_operation(char *token, char *savePtr)
         free(realPath);
 
         if (offset > updateStats.st_size){
-            msg = set_status(BAD_ARGUMENTS);
+            msg = set_status(OUT_OF_MEMORY);
             fclose(f);
             free(filePath);
             free(newContent);
@@ -318,21 +334,18 @@ char *search_operation(char *token, char *savePtr)
     }
 
     str = calloc(nrSearchFiles * LENGTH  + 1, sizeof(char));
-    msg = calloc(nrSearchFiles * LENGTH + nrFiles + 1 + msgSize, sizeof(char));
+    msg = calloc(nrSearchFiles * LENGTH + MAX_FILES + 1 + msgSize, sizeof(char));
 
     for (int i = 0; i < nrSearchFiles; i ++){
         for (int j = 0; j < FIRST_WORDS; j ++){
             if (check_length(word, searchFiles[i].freqWords[j].word)){
-                //printf("Find '%s' in '%s' with path '%s'\n", word, searchFiles[i].freqWords[j].word, searchFiles[i].filename);
                 memcpy(str + strlen(str), searchFiles[i].filename, strlen(searchFiles[i].filename));
                 str[strlen(str)] = ' ';
             }
         }
     }
 
-    //printf("str is: %s\n", str);
     snprintf(msg, (strlen(str) + msgSize), "0; %d; %s\n", strlen(str), str);
-    //printf("msg is: %s\n", msg);
 
     // unlock mutex
     pthread_mutex_unlock(&mtx);
@@ -348,7 +361,6 @@ char *search_operation(char *token, char *savePtr)
 
 char *select_command(char *buff)
 {
-    printf("Enter select_command with buf: '%s'\n", buff);
     char *msg, *str, *token, *savePtr;
     uint32_t operation;
     bool isEnd = false;
@@ -364,7 +376,6 @@ char *select_command(char *buff)
 
         token = strtok_r(str, " ;\n", &savePtr);
         operation = atoi(token);
-        //printf("Token is: '%s'\n", token);
 
         if (operation == 0 && strncmp(token,"0", strlen(token)) != 0)
             operation = 99;

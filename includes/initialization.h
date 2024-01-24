@@ -29,6 +29,8 @@
 
 #define SUCCESS 0
 #define FILE_NOT_FOUND 1
+#define OUT_OF_MEMORY 4
+#define SERVER_BUSY 8
 #define UNKNOWN_OPERATION 10
 #define BAD_ARGUMENTS 20
 #define OTHER_ERROR 40
@@ -37,7 +39,7 @@
 #define MAX_FILES 10
 #define LENGTH 100
 #define PATH_LENGTH 20
-#define CLIENTS 2
+#define CLIENTS 1
 #define EVENTS (CLIENTS + 1)
 #define FIRST_WORDS 10
 
@@ -45,11 +47,6 @@
 #define ROOT "root"
 #define LOG_FILE "files/log.txt"
 #define INSTRUCTIONS_FILE "includes/instructions_file.txt"
-
-typedef struct{
-    int index;
-    int connfd;
-}params;
 
 typedef struct{
     char word[LENGTH];
@@ -71,11 +68,11 @@ extern pthread_cond_t indexCond, listenCond;
 
 extern thread_local int in_fd;
 extern thread_local struct stat fileStats;
-extern thread_local bool canDownload;
+extern thread_local bool canDownload, isMoveOperation;
 extern thread_local char sendToLog[LENGTH];
 
-extern int listener, len, epfd, nrThreads, nrFiles, nrSearchFiles;
-extern char listFiles[MAX_FILES][LENGTH];
+extern int listener, len, epfd, nrThreads, nrSearchFiles;
+extern char listFiles[MAX_FILES + 1][LENGTH];
 extern bool canIndex, printMaxClientsReached;
 extern files searchFiles[MAX_FILES];
 
@@ -105,3 +102,5 @@ char *show_instructions();
 void indexFiles();
 files getSearchFile(char *file);
 int first_appearance(wordsFile **words, int size, char *wordName);
+bool check_nr_files();
+int index_listFiles();

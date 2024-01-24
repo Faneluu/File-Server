@@ -6,15 +6,15 @@ struct epoll_event ev, ret_ev, events[EVENTS];
 volatile __sig_atomic_t terminate = 0;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER, logMtx = PTHREAD_MUTEX_INITIALIZER, indexMtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t indexCond = PTHREAD_COND_INITIALIZER, listenCond = PTHREAD_COND_INITIALIZER;
-pthread_t listenThread, terminatorThread, indexingThread, clientThreads[CLIENTS];
+pthread_t listenThread, terminatorThread, indexingThread;
 
 thread_local int in_fd;
 thread_local struct stat fileStats;
-thread_local bool canDownload = false;
+thread_local bool canDownload = false, isMoveOperation = false;
 thread_local char sendToLog[LENGTH] = {0};
 
-int listener, len, epfd, nrThreads = 0, nrFiles = 0, nrSearchFiles = 0;
-char listFiles[MAX_FILES][LENGTH] = {0};
+int listener, len, epfd, nrThreads = 0, nrSearchFiles = 0;
+char listFiles[MAX_FILES + 1][LENGTH] = {0};
 bool canIndex = false, printMaxClientsReached = false;
 
 files searchFiles[MAX_FILES] = {0};
@@ -37,16 +37,11 @@ void end_signals(int sig){
 
 void *handle_end(void *args)
 {
-    //printf("Inside handle_end!\n");
-
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = end_signals;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
-    
-
-    //printf("Finish handle_end\n");
 }
 
 void *handle_client(void *args)
@@ -74,12 +69,10 @@ void *handle_client(void *args)
             int bytesRead = read(clientSocket, buff, sizeof(buff));
             if(bytesRead <= 0){
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
-                    //printf("No data available right now!\n");
                     continue;
                 }                           
 
                 else{
-                    //perror("read");
                     break;
                 }
             }
@@ -97,24 +90,18 @@ void *handle_client(void *args)
                 else 
                     msg = select_command(buff);
 
-                // print buffer
-                //printf("From client: %s\tTo client: %s", buff, msg);
-
                 // download
                 if (canDownload){
-                    //printf("\nDownloaded from server with clientfd= %d and filefd= %d with size= %d\n", clientThreadParam.connfd, in_fd, fileStats.st_size);
-
                     off_t offset = 0;
                     int cork = 1;
 
+                    // set TCP_CORK to put it on a stack
                     setsockopt(clientSocket, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
 
                     // send buffer to client
                     write(clientSocket, msg, strlen(msg));
 
                     ssize_t results = sendfile(clientSocket, in_fd, &offset, fileStats.st_size);
-
-                    //printf("Bytes sent to client= %d\n", results);
 
                     if (results < 0){
                         perror("sendfile");
@@ -136,16 +123,16 @@ void *handle_client(void *args)
                 free(msg);
             }
         }
-
-        //printf("Terminate is: %d\n", terminate);
     }
 
     pthread_mutex_lock(&mtx);
+
     nrThreads--;
     printMaxClientsReached = false;
     close(myEpfd);
     close(clientSocket);
     printf("Have %d threads at exit\n", nrThreads);
+    
     pthread_mutex_unlock(&mtx);
 
     pthread_cond_signal(&listenCond);
@@ -155,8 +142,6 @@ void *handle_client(void *args)
 
 void *handle_indexing(void *args)
 {
-    //printf("Create thread for handling indexing!\n");
-
     indexFiles();
 
     while (!terminate){
@@ -165,28 +150,26 @@ void *handle_indexing(void *args)
         while (!canIndex && !terminate)
             pthread_cond_wait(&indexCond, &indexMtx);
 
-        //printf("Work with indexing\n");
+        //printf("index working\n");
+
         if (!terminate)
             indexFiles();
 
         canIndex = false;
         pthread_mutex_unlock(&indexMtx);
     }
-
-    //printf("Exit indexingThread\n");
 }
 
 void *handle_connections(void *args)
 {
-    //printf("Thread for connections created!\n");
     pthread_attr_t threadAttr;
     char buff[LENGTH] = {0};
+    uint32_t stats, net_stats;
 
     pthread_attr_init(&threadAttr);
     pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_DETACHED);
 
     while (!terminate){
-        //printf("Preapare to work epoll_wait()!\n");
         int numEvents = epoll_wait(epfd, &ret_ev, EVENTS, TIMEOUT);
 
         if (numEvents == -1){
@@ -195,7 +178,7 @@ void *handle_connections(void *args)
         }
 
         if (ret_ev.data.fd == listener && (ret_ev.events & EPOLLIN) != 0){
-            //printf("Event is from CLIENT with %d threads!\n", nrThreads);
+            printf("LISTEN on client with %d threads\n", nrThreads);
             // accept the data packet from client and verify
             int newSocket = accept(listener, (SA*)&cli, &len);
             if (newSocket < 0){
@@ -208,23 +191,24 @@ void *handle_connections(void *args)
             ret_ev.events = EPOLLIN;
             epoll_ctl(epfd, EPOLL_CTL_ADD, newSocket, &ret_ev);
 
+            // max clients
             if (nrThreads == CLIENTS){
                 if (!printMaxClientsReached){
                     printf("Max clients reached!\n");
                     printMaxClientsReached = true;
                 }
         
-                memset(buff, '\0', strlen(buff));
-                memcpy(buff, "no", 2);
-                write(newSocket, buff, 10);
+                stats = SERVER_BUSY;
+                net_stats = htonl(stats);
+                write(newSocket, &net_stats, sizeof(net_stats));
                 close(newSocket);
             }
             else{
                 printf("Server accept the client..\n");
 
-                memset(buff, '\0', strlen(buff));
-                memcpy(buff, "yes", 3);
-                write(newSocket, buff, 10);
+                stats = 1;
+                net_stats = htonl(stats);
+                write(newSocket, &net_stats, sizeof(net_stats));
 
                 pthread_t clientThread;
                 pthread_create(&clientThread, &threadAttr, handle_client, &newSocket);
@@ -234,7 +218,6 @@ void *handle_connections(void *args)
         }
 
         else if (ret_ev.data.fd == STDIN_FILENO && (ret_ev.events & EPOLLIN) != 0){
-            //printf("Event is STDIN!\n");
             memset(buff, '\0', LENGTH);
             int bytesRead = read(ret_ev.data.fd, buff, sizeof(buff));
             printf("Read from input: %s", buff);
@@ -249,13 +232,7 @@ void *handle_connections(void *args)
     while (nrThreads)
         pthread_cond_wait(&listenCond, &mtx);
 
-    // printf("Preapare to join!\n");
-    // for (int i = 0; i < nrThreads; i ++){
-    //     pthread_join(clientThread[i], NULL);
-    //     printf("Joinned %d\n", i);
-    // }
     pthread_attr_destroy(&threadAttr);
-    //printf("Exit thread for connections!\n");
 }
 
 int initialiseServer()
@@ -308,12 +285,13 @@ int initialiseServer()
     if (f == NULL)
         return sockfd;
 
-    char buff[LENGTH] = {0};
+    char buff[LENGTH + 1] = {0};
+    int count = 0;
 
     while (fgets(buff, LENGTH, f) != NULL){
         buff[strcspn(buff, "\n")] = '\0';
-        memcpy(listFiles[nrFiles], buff, strlen(buff));
-        nrFiles++;
+        memcpy(listFiles[count], buff, strlen(buff));
+        count++;
         memset(buff, '\0', strlen(buff));
     }
     fclose(f);
@@ -339,22 +317,12 @@ int main()
     pthread_create(&terminatorThread, NULL, handle_end, NULL);
     pthread_create(&indexingThread, NULL, handle_indexing, NULL);
     
-    
-    //printf("Prepare to join listenThread\n");
     pthread_join(listenThread, NULL);
-
-    //printf("Prepare to join terminatorThread\n");
     pthread_join(terminatorThread, NULL);
-
-    //printf("Prepare to join indexingThread\n");
     pthread_join(indexingThread, NULL);
 
     close(listener);
     close(epfd);
-
-    // printf("Joinned listenThread\n");
-    // printf("Joinned terminatorThread\n");
-    // printf("Joinned indexingThread\n");
 
     printf("Exiting...\n");
 

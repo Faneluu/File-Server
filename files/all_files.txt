@@ -1,4 +1,4 @@
-/filozofie/kant
-/filozofie/voltaire
 /istorie/napoleon
-/SF/starwars
+/filozofie/voltaire
+/antichitate/caesar
+/literatura/mizerabilii
